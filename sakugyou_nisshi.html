@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="農園日誌"/>
+  <title>北栄農園 作業日誌</title>
+  <style>
+    :root{
+      --green:#27AE60;--green-l:#2ECC71;--green-d:#1E8449;
+      --orange:#E67E22;--brown:#7D5A2F;--sky:#2980B9;
+      --bg:#F5FFF8;--card:#FFF;--text:#2C2C2C;--muted:#7F8C8D;
+      --shadow:0 2px 12px rgba(39,174,96,.13);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,'Hiragino Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+    header{background:linear-gradient(135deg,#3d2b1f,var(--brown),#a07040);color:#fff;padding:14px 16px;text-align:center}
+    header h1{font-size:1.1rem;font-weight:800;letter-spacing:.05em}
+    header .sub{font-size:.72rem;opacity:.85;margin-top:3px}
+
+    .tabs{display:flex;background:#3d2b1f;overflow-x:auto;scrollbar-width:none}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab-btn{flex:1;padding:11px 6px;font-size:.76rem;font-weight:600;color:rgba(255,255,255,.5);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+    .tab-btn.active{color:#fff;border-bottom-color:#F9CA24}
+    .tab-content{display:none}.tab-content.active{display:block}
+
+    .container{max-width:500px;margin:0 auto;padding:12px 10px 60px}
+    .card{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:14px;margin-bottom:10px}
+    .sec{font-size:.68rem;font-weight:800;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;text-transform:uppercase}
+
+    /* 天気ボタン */
+    .wx-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+    .wx-btn{padding:7px 12px;border:2px solid #ddd;border-radius:20px;font-size:.85rem;background:#fff;cursor:pointer;transition:.15s}
+    .wx-btn.sel{border-color:var(--green);background:#E8F8EF;font-weight:700}
+
+    /* 担当・エリアチェック */
+    .check-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+    .check-chip{padding:6px 12px;border:2px solid #ddd;border-radius:16px;font-size:.8rem;background:#fff;cursor:pointer;transition:.15s;user-select:none}
+    .check-chip.sel{font-weight:700}
+    .chip-tsuyoshi.sel{border-color:#2980B9;background:#EBF5FB;color:#2980B9}
+    .chip-maro.sel{border-color:var(--green);background:#E8F8EF;color:var(--green-d)}
+    .chip-haha.sel{border-color:var(--green);background:#E8F8EF;color:var(--green-d)}
+    .chip-chichi.sel{border-color:#7D5A2F;background:#FDF3E3;color:#7D5A2F}
+    .chip-obachan.sel{border-color:var(--orange);background:#FEF3E2;color:var(--orange)}
+    .chip-koko.sel{border-color:#8E44AD;background:#F5EEF8;color:#8E44AD}
+    .chip-shine.sel{border-color:#8E44AD;background:#F5EEF8;color:#8E44AD}
+    .chip-pione.sel{border-color:#C0392B;background:#FDEAEA;color:#C0392B}
+    .chip-negi.sel{border-color:var(--green);background:#E8F8EF;color:var(--green-d)}
+    .chip-all.sel{border-color:var(--brown);background:#FDF3E3;color:var(--brown)}
+
+    /* テキストエリア */
+    .nisshi-ta{width:100%;border:1.5px solid #D5EFE0;border-radius:9px;padding:9px 11px;font-size:.83rem;line-height:1.7;font-family:inherit;resize:vertical;min-height:80px;background:#FDFFFE}
+    .nisshi-ta:focus{outline:none;border-color:var(--green)}
+    .wisdom-ta{border-color:#FAD7A0;background:#FFFDF5}
+    .wisdom-ta:focus{border-color:var(--orange)}
+
+    /* 気温 */
+    .temp-row{display:flex;align-items:center;gap:8px}
+    .temp-input{width:64px;border:1.5px solid #D5EFE0;border-radius:8px;padding:6px 8px;font-size:.88rem;text-align:center}
+    .temp-input:focus{outline:none;border-color:var(--green)}
+
+    /* 保存ボタン */
+    .save-btn{width:100%;background:linear-gradient(135deg,var(--green-d),var(--green));color:#fff;border:none;border-radius:12px;padding:13px;font-size:.9rem;font-weight:800;cursor:pointer;margin-top:4px;letter-spacing:.05em}
+    .save-btn:active{opacity:.85}
+
+    /* 記録一覧 */
+    .entry-card{background:var(--card);border-radius:12px;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
+    .entry-head{padding:11px 13px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border-left:5px solid var(--green)}
+    .entry-date{font-size:.85rem;font-weight:800}
+    .entry-summary{font-size:.72rem;color:var(--muted);margin-top:2px}
+    .entry-body{padding:12px 14px;border-top:1px solid #F0F0F0;display:none}
+    .entry-body.open{display:block}
+    .entry-row{font-size:.78rem;margin-bottom:6px;line-height:1.6}
+    .entry-label{font-weight:700;color:var(--green-d);font-size:.7rem}
+    .entry-del{background:#FDEAEA;color:#E74C3C;border:none;border-radius:6px;padding:4px 10px;font-size:.68rem;cursor:pointer;margin-top:6px}
+    .entry-edit{background:#EBF5FB;color:#2980B9;border:none;border-radius:6px;padding:4px 10px;font-size:.68rem;cursor:pointer;margin-top:6px;margin-right:6px;font-weight:700}
+    .edit-banner{background:linear-gradient(135deg,#1a5276,#2980B9);color:#fff;border-radius:10px;padding:9px 13px;margin-bottom:10px;font-size:.8rem;font-weight:700;display:none;text-align:center}
+    .edit-banner.show{display:block}
+
+    /* ばあちゃんの知恵袋 */
+    .wisdom-card{background:#FFFDF5;border-radius:12px;border:2px solid #FAD7A0;padding:12px 14px;margin-bottom:8px;position:relative}
+    .wisdom-month{font-size:.65rem;font-weight:800;color:var(--orange);background:#FEF3E2;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:5px}
+    .wisdom-crop{font-size:.65rem;color:#fff;padding:2px 7px;border-radius:10px;display:inline-block;margin-left:4px;margin-bottom:5px}
+    .wisdom-text{font-size:.82rem;line-height:1.75;color:#3d2b1f;font-weight:500}
+    .wisdom-date{font-size:.65rem;color:var(--muted);margin-top:5px}
+    .wisdom-del{position:absolute;top:8px;right:8px;background:#FDEAEA;color:#E74C3C;border:none;border-radius:6px;padding:3px 8px;font-size:.65rem;cursor:pointer}
+
+    .wisdom-add-form{background:#FFFDF5;border:2px dashed #FAD7A0;border-radius:12px;padding:13px;margin-bottom:10px}
+
+    /* 月フィルター */
+    .month-filter{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+    .mf-btn{padding:5px 10px;border:1.5px solid #ddd;border-radius:14px;font-size:.72rem;background:#fff;cursor:pointer}
+    .mf-btn.sel{background:var(--orange);color:#fff;border-color:var(--orange);font-weight:700}
+
+    .empty{text-align:center;padding:30px;color:var(--muted);font-size:.82rem}
+
+    .wx-icon{font-size:1.4rem;margin-bottom:2px}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 北栄農園 作業日誌</h1>
+  <div class="sub">シャイン・ピオーネ・白葱 ／ 技術継承の記録</div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('rec',this)">📝 今日の記録</button>
+  <button class="tab-btn" onclick="switchTab('list',this)">📚 記録一覧</button>
+  <button class="tab-btn" onclick="switchTab('wisdom',this)">🌸 おばあちゃんの知恵袋</button>
+</div>
+
+<!-- 今日の記録 -->
+<div class="tab-content active" id="tab-rec">
+  <div class="container">
+
+    <div class="card">
+      <div class="sec">📅 日付・天気</div>
+      <div style="margin-bottom:10px">
+        <input type="date" id="rec_date" style="border:1.5px solid #D5EFE0;border-radius:8px;padding:7px 10px;font-size:.88rem;width:100%;font-family:inherit">
+      </div>
+      <div class="sec">天気</div>
+      <div class="wx-row" id="wxRow">
+        <button class="wx-btn" onclick="selWx(this,'☀️ 快晴')">☀️ 快晴</button>
+        <button class="wx-btn" onclick="selWx(this,'🌤 晴れ')">🌤 晴れ</button>
+        <button class="wx-btn" onclick="selWx(this,'⛅ 曇り')">⛅ 曇り</button>
+        <button class="wx-btn" onclick="selWx(this,'🌧 雨')">🌧 雨</button>
+        <button class="wx-btn" onclick="selWx(this,'⛈ 荒天')">⛈ 荒天</button>
+        <button class="wx-btn" onclick="selWx(this,'❄️ 雪')">❄️ 雪</button>
+      </div>
+      <div class="sec" style="margin-top:10px">気温</div>
+      <div class="temp-row">
+        <span style="font-size:.8rem">最高</span>
+        <input class="temp-input" type="number" id="rec_hi" placeholder="℃">
+        <span style="font-size:.8rem">最低</span>
+        <input class="temp-input" type="number" id="rec_lo" placeholder="℃">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">👤 担当者</div>
+      <div class="check-row" id="workerRow">
+        <div class="check-chip chip-tsuyoshi" onclick="toggleChip(this)">剛志</div>
+        <div class="check-chip chip-koko" onclick="toggleChip(this)">ここちゃん</div>
+        <div class="check-chip chip-obachan" onclick="toggleChip(this)">おばあちゃん</div>
+        <div class="check-chip chip-haha" onclick="toggleChip(this)">母</div>
+        <div class="check-chip chip-chichi" onclick="toggleChip(this)">父</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">🍇 作業エリア</div>
+      <div class="check-row" id="areaRow">
+        <div class="check-chip chip-shine" onclick="toggleChip(this)">シャイン</div>
+        <div class="check-chip chip-pione" onclick="toggleChip(this)">ピオーネ</div>
+        <div class="check-chip chip-negi" onclick="toggleChip(this)">白葱</div>
+        <div class="check-chip chip-all" onclick="toggleChip(this)">農園全体</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">🌱 今日の作業内容</div>
+      <textarea class="nisshi-ta" id="rec_work" rows="4" placeholder="何をしたか、どのくらいやったか（例：シャイン全体の芽かき。新芽が5cm程度になったので下から2芽を残し整理した）"></textarea>
+      <div class="sec" style="margin-top:10px">農薬・資材の使用</div>
+      <textarea class="nisshi-ta" id="rec_materials" rows="2" placeholder="（例：石灰硫黄合剤100倍 / なし）"></textarea>
+    </div>
+
+    <div class="card" style="border:2px solid #AED6F1;background:#EBF5FB">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <span style="background:#2980B9;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;flex-shrink:0">③</span>
+        <div class="sec" style="color:#1a5276;margin-bottom:0">剛志へ伝えたいポイント</div>
+      </div>
+      <div style="font-size:.72rem;color:#2980B9;margin-bottom:7px;line-height:1.6">
+        なぜ今この時期に？どう判断する？経験から来るコツを書き残す
+      </div>
+      <div class="sec" style="color:#1a5276;margin-top:2px">⏰ なぜ今この時期にやるのか</div>
+      <textarea class="nisshi-ta" id="rec_why" rows="2" style="border-color:#AED6F1;background:#fff" placeholder="（例：新芽が5cmになったら迷わずやる。遅れると木が疲れる）"></textarea>
+      <div class="sec" style="color:#1a5276;margin-top:10px">💡 作業のコツ・判断のポイント</div>
+      <textarea class="nisshi-ta" id="rec_tips" rows="3" style="border-color:#AED6F1;background:#fff" placeholder="（例：残す芽は元気のいい下向きの芽を選ぶ。迷ったら少なめに残す。やりすぎより少なめが安全）"></textarea>
+      <div class="sec" style="color:#1a5276;margin-top:10px">👀 今日気になった生育・病害の状態</div>
+      <textarea class="nisshi-ta" id="rec_obs" rows="2" style="border-color:#AED6F1;background:#fff" placeholder="（例：3番の株の色が薄い。東側の列がやや遅れ気味）"></textarea>
+    </div>
+
+    <div class="card" style="border:2px solid #FAD7A0;background:#FFFDF9">
+      <div class="sec" style="color:var(--orange)">🌸 おばあちゃんの知恵・言葉</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px">おばあちゃんが教えてくれたこと、ふと言っていた言葉</div>
+      <textarea class="nisshi-ta wisdom-ta" id="rec_wisdom" rows="3" placeholder="（例：「この時期の芽は触りすぎたらあかん。木が自分でわかってる」）"></textarea>
+      <div class="sec" style="margin-top:10px;color:var(--orange)">どの作物・時期の知恵？</div>
+      <div class="check-row" id="wisdomCropRow">
+        <div class="check-chip chip-shine" onclick="toggleChip(this)">シャイン</div>
+        <div class="check-chip chip-pione" onclick="toggleChip(this)">ピオーネ</div>
+        <div class="check-chip chip-negi" onclick="toggleChip(this)">白葱</div>
+        <div class="check-chip chip-all" onclick="toggleChip(this)">全般</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">📌 気づき・明日へのメモ</div>
+      <textarea class="nisshi-ta" id="rec_memo" rows="2" placeholder="気になった株・病害・次回やること など"></textarea>
+    </div>
+
+    <div class="edit-banner" id="editBanner">✏️ 編集モード ― 内容を修正して「更新する」を押してください</div>
+    <button id="saveBtn" class="save-btn" onclick="saveEntry()">💾 この記録を保存する</button>
+
+  </div>
+</div>
+
+<!-- 記録一覧 -->
+<div class="tab-content" id="tab-list">
+  <div class="container">
+    <div class="card" style="padding:10px 12px">
+      <input type="month" id="filterMonth" oninput="renderList()" style="border:1.5px solid #D5EFE0;border-radius:8px;padding:6px 10px;font-size:.85rem;font-family:inherit;width:100%">
+    </div>
+    <div id="entryList"></div>
+  </div>
+</div>
+
+<!-- おばあちゃんの知恵袋 -->
+<div class="tab-content" id="tab-wisdom">
+  <div class="container">
+
+    <div style="background:linear-gradient(135deg,#7D5A2F,#a0813a,#c9a96e);color:#fff;border-radius:12px;padding:13px 16px;margin-bottom:12px;text-align:center">
+      <div style="font-size:1rem;font-weight:800">🌸 おばあちゃんの知恵袋</div>
+      <div style="font-size:.72rem;opacity:.85;margin-top:3px">北栄農園 85年の知恵と経験</div>
+    </div>
+
+    <!-- 直接追加 -->
+    <div class="wisdom-add-form">
+      <div class="sec" style="color:var(--orange)">＋ 知恵を直接追加する</div>
+      <textarea class="nisshi-ta wisdom-ta" id="w_text" rows="3" placeholder="おばあちゃんの言葉・教え・この時期のコツ を書き留める"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <select id="w_month" style="border:1.5px solid #FAD7A0;border-radius:8px;padding:6px;font-size:.8rem;flex:1">
+          <option value="0">時期：通年</option>
+          <option value="1">1月（冬・剪定）</option>
+          <option value="2">2月（剪定・誘引）</option>
+          <option value="3">3月（萌芽前）</option>
+          <option value="4">4月（萌芽・芽かき）</option>
+          <option value="5">5月（新梢管理）</option>
+          <option value="6">6月（開花・着果）</option>
+          <option value="7">7月（摘粒・袋かけ）</option>
+          <option value="8">8月（着色・管理）</option>
+          <option value="9">9月（収穫）</option>
+          <option value="10">10月（収穫・後管理）</option>
+          <option value="11">11月（紅葉・落葉）</option>
+          <option value="12">12月（剪定準備）</option>
+        </select>
+        <select id="w_crop" style="border:1.5px solid #FAD7A0;border-radius:8px;padding:6px;font-size:.8rem;flex:1">
+          <option value="全般">全般</option>
+          <option value="シャイン">シャイン</option>
+          <option value="ピオーネ">ピオーネ</option>
+          <option value="白葱">白葱</option>
+        </select>
+      </div>
+      <button onclick="addWisdom()" style="width:100%;background:var(--orange);color:#fff;border:none;border-radius:10px;padding:10px;font-size:.82rem;font-weight:800;cursor:pointer;margin-top:8px">🌸 知恵を保存する</button>
+    </div>
+
+    <!-- 月フィルター -->
+    <div class="month-filter" id="wisdomFilter">
+      <button class="mf-btn sel" onclick="filterWisdom(0,this)">すべて</button>
+      <button class="mf-btn" onclick="filterWisdom(1,this)">1月</button>
+      <button class="mf-btn" onclick="filterWisdom(2,this)">2月</button>
+      <button class="mf-btn" onclick="filterWisdom(3,this)">3月</button>
+      <button class="mf-btn" onclick="filterWisdom(4,this)">4月</button>
+      <button class="mf-btn" onclick="filterWisdom(5,this)">5月</button>
+      <button class="mf-btn" onclick="filterWisdom(6,this)">6月</button>
+      <button class="mf-btn" onclick="filterWisdom(7,this)">7月</button>
+      <button class="mf-btn" onclick="filterWisdom(8,this)">8月</button>
+      <button class="mf-btn" onclick="filterWisdom(9,this)">9月</button>
+      <button class="mf-btn" onclick="filterWisdom(10,this)">10月</button>
+      <button class="mf-btn" onclick="filterWisdom(11,this)">11月</button>
+      <button class="mf-btn" onclick="filterWisdom(12,this)">12月</button>
+    </div>
+
+    <div id="wisdomList"></div>
+
+  </div>
+</div>
+
+<script>
+
+// ---- データ ----
+let entries=[];
+let wisdoms=[];
+let nextId=1;
+let nextWId=1;
+let selectedWx='';
+let wisdomMonthFilter=0;
+let editingId=null; // null=新規, 数字=編集中
+
+const CROP_COLORS={
+  'シャイン':'#8E44AD','ピオーネ':'#C0392B','白葱':'#27AE60','全般':'#7D5A2F','全体':'#7D5A2F'
+};
+const MONTH_NAMES=['通年','1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+// ---- 起動 ----
+function init(){
+  const d=localStorage.getItem('nisshi_entries');
+  if(d){const p=JSON.parse(d);entries=p.items||[];nextId=p.nextId||1;}
+  const w=localStorage.getItem('nisshi_wisdoms');
+  if(w){const p=JSON.parse(w);wisdoms=p.items||[];nextWId=p.nextId||1;}
+  // 今日の日付をセット
+  const today=new Date();
+  document.getElementById('rec_date').value=today.toISOString().slice(0,10);
+  renderList();
+  renderWisdoms();
+}
+
+function saveEntries(){localStorage.setItem('nisshi_entries',JSON.stringify({items:entries,nextId}));}
+function saveWisdoms(){localStorage.setItem('nisshi_wisdoms',JSON.stringify({items:wisdoms,nextWId}));}
+
+// ---- 天気選択 ----
+function selWx(btn,wx){
+  document.querySelectorAll('.wx-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  selectedWx=wx;
+}
+
+// ---- チップ選択 ----
+function toggleChip(el){el.classList.toggle('sel');}
+
+function getChips(rowId){
+  return [...document.querySelectorAll(`#${rowId} .check-chip.sel`)].map(c=>c.textContent.trim());
+}
+
+// ---- 記録保存 ----
+function saveEntry(){
+  const date=document.getElementById('rec_date').value;
+  const hi=document.getElementById('rec_hi').value;
+  const lo=document.getElementById('rec_lo').value;
+  const work=document.getElementById('rec_work').value.trim();
+  const materials=document.getElementById('rec_materials').value.trim();
+  const why=document.getElementById('rec_why').value.trim();
+  const tips=document.getElementById('rec_tips').value.trim();
+  const obs=document.getElementById('rec_obs').value.trim();
+  const wisdomText=document.getElementById('rec_wisdom').value.trim();
+  const wisdomCrops=getChips('wisdomCropRow');
+  const memo=document.getElementById('rec_memo').value.trim();
+  const workers=getChips('workerRow');
+  const areas=getChips('areaRow');
+
+  if(!date){alert('日付を入力してください');return;}
+  if(!work){alert('作業内容を入力してください');return;}
+
+  if(editingId!==null){
+    // ---- 編集モード：既存を上書き ----
+    const idx=entries.findIndex(x=>x.id===editingId);
+    if(idx>=0){
+      entries[idx]={...entries[idx],date,weather:selectedWx,
+        temp_hi:hi,temp_lo:lo,workers,areas,work,materials,why,tips,obs,memo};
+    }
+    editingId=null;
+    const btn=document.getElementById('saveBtn');
+    btn.textContent='💾 この記録を保存する';
+    btn.style.background='';
+    document.getElementById('editBanner').classList.remove('show');
+    alert('記録を更新しました！✏️');
+  } else {
+    // ---- 新規保存 ----
+    const entry={
+      id:nextId++,date,weather:selectedWx,
+      temp_hi:hi,temp_lo:lo,
+      workers,areas,work,materials,why,tips,obs,memo
+    };
+    entries.unshift(entry);
+    alert('記録を保存しました！');
+  }
+
+  saveEntries();
+
+  // おばあちゃんの知恵があれば自動保存
+  if(wisdomText){
+    const month=new Date(date).getMonth()+1;
+    const crop=wisdomCrops.length>0?wisdomCrops.join('・'):'全般';
+    wisdoms.unshift({id:nextWId++,month,crop,text:wisdomText,date});
+    saveWisdoms();
+  }
+
+  clearForm();
+  renderList();
+  renderWisdoms();
+}
+
+function clearForm(){
+  document.getElementById('rec_work').value='';
+  document.getElementById('rec_materials').value='';
+  document.getElementById('rec_why').value='';
+  document.getElementById('rec_tips').value='';
+  document.getElementById('rec_obs').value='';
+  document.getElementById('rec_wisdom').value='';
+  document.getElementById('rec_memo').value='';
+  document.getElementById('rec_hi').value='';
+  document.getElementById('rec_lo').value='';
+  document.querySelectorAll('.wx-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('.check-chip').forEach(c=>c.classList.remove('sel'));
+  selectedWx='';
+  editingId=null;
+  const btn=document.getElementById('saveBtn');
+  btn.textContent='💾 この記録を保存する';
+  btn.style.background='';
+  document.getElementById('editBanner').classList.remove('show');
+  // 日付は今日にリセット
+  document.getElementById('rec_date').value=new Date().toISOString().slice(0,10);
+}
+
+// ---- 一覧表示 ----
+function renderList(){
+  const el=document.getElementById('entryList');
+  const fm=document.getElementById('filterMonth').value; // "2026-04"
+  let filtered=entries;
+  if(fm) filtered=entries.filter(e=>e.date.startsWith(fm));
+
+  if(filtered.length===0){
+    el.innerHTML='<div class="empty">📝 まだ記録がありません</div>';return;
+  }
+
+  el.innerHTML=filtered.map(e=>{
+    const wkStr=e.workers.length?e.workers.join('・'):'—';
+    const arStr=e.areas.length?e.areas.join('・'):'—';
+    const short=e.work.length>28?e.work.slice(0,28)+'…':e.work;
+    return `
+    <div class="entry-card">
+      <div class="entry-head" onclick="toggleEntry(${e.id})"
+        style="border-left-color:${e.areas[0]?CROP_COLORS[e.areas[0]]||'var(--green)':'var(--green)'}">
+        <div>
+          <div class="entry-date">${e.date}　${e.weather||''}</div>
+          <div class="entry-summary">${wkStr}　${arStr}　${e.temp_hi?e.temp_hi+'℃':''}</div>
+          <div class="entry-summary">${short}</div>
+        </div>
+        <span style="font-size:.8rem;color:var(--muted)">▼</span>
+      </div>
+      <div class="entry-body" id="eb_${e.id}">
+        <div class="entry-row"><span class="entry-label">担当　</span>${wkStr}</div>
+        <div class="entry-row"><span class="entry-label">エリア　</span>${arStr}</div>
+        <div class="entry-row"><span class="entry-label">天気・気温　</span>${e.weather||'—'}　最高${e.temp_hi||'—'}℃　最低${e.temp_lo||'—'}℃</div>
+        <div class="entry-row"><span class="entry-label">作業内容</span><br>${e.work.replace(/\n/g,'<br>')}</div>
+        ${e.materials?`<div class="entry-row"><span class="entry-label">農薬・資材　</span>${e.materials}</div>`:''}
+        ${(e.why||e.tips||e.obs)?`
+        <div style="background:#EBF5FB;border-radius:8px;padding:8px 10px;margin-top:6px;border-left:3px solid #2980B9">
+          <div style="font-size:.68rem;font-weight:800;color:#1a5276;margin-bottom:4px">③ 剛志へのポイント</div>
+          ${e.why?`<div class="entry-row"><span class="entry-label">なぜ今？　</span>${e.why.replace(/\n/g,'<br>')}</div>`:''}
+          ${e.tips?`<div class="entry-row"><span class="entry-label">コツ　</span>${e.tips.replace(/\n/g,'<br>')}</div>`:''}
+          ${e.obs?`<div class="entry-row"><span class="entry-label">生育観察　</span>${e.obs.replace(/\n/g,'<br>')}</div>`:''}
+        </div>`:''}
+        ${e.memo?`<div class="entry-row"><span class="entry-label">メモ　</span>${e.memo}</div>`:''}
+        <div style="margin-top:8px">
+          <button class="entry-edit" onclick="editEntry(${e.id})">✏️ 編集・追記</button>
+          <button class="entry-del" onclick="delEntry(${e.id})">🗑 削除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleEntry(id){
+  const el=document.getElementById('eb_'+id);
+  if(el) el.classList.toggle('open');
+}
+
+function delEntry(id){
+  if(!confirm('この記録を削除しますか？'))return;
+  entries=entries.filter(e=>e.id!==id);
+  saveEntries();renderList();
+}
+
+function editEntry(id){
+  const e=entries.find(x=>x.id===id);
+  if(!e) return;
+  editingId=id;
+
+  // 日付・天気・気温
+  document.getElementById('rec_date').value=e.date;
+  document.querySelectorAll('.wx-btn').forEach(b=>{
+    b.classList.remove('sel');
+    if(b.textContent.trim()===e.weather) b.classList.add('sel');
+  });
+  selectedWx=e.weather||'';
+  document.getElementById('rec_hi').value=e.temp_hi||'';
+  document.getElementById('rec_lo').value=e.temp_lo||'';
+
+  // 担当者チップ
+  document.querySelectorAll('#workerRow .check-chip').forEach(c=>{
+    c.classList.toggle('sel',(e.workers||[]).includes(c.textContent.trim()));
+  });
+  // エリアチップ
+  document.querySelectorAll('#areaRow .check-chip').forEach(c=>{
+    c.classList.toggle('sel',(e.areas||[]).includes(c.textContent.trim()));
+  });
+
+  // テキストエリア
+  document.getElementById('rec_work').value=e.work||'';
+  document.getElementById('rec_materials').value=e.materials||'';
+  document.getElementById('rec_why').value=e.why||'';
+  document.getElementById('rec_tips').value=e.tips||'';
+  document.getElementById('rec_obs').value=e.obs||'';
+  document.getElementById('rec_memo').value=e.memo||'';
+  document.getElementById('rec_wisdom').value='';
+
+  // ボタン・バナーを編集モードに
+  const btn=document.getElementById('saveBtn');
+  btn.textContent='💾 この記録を更新する';
+  btn.style.background='linear-gradient(135deg,#1a5276,#2980B9)';
+  document.getElementById('editBanner').classList.add('show');
+
+  // 今日の記録タブに切り替えてトップへ
+  switchTab('rec',document.querySelectorAll('.tab-btn')[0]);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ---- おばあちゃんの知恵袋 ----
+function addWisdom(){
+  const text=document.getElementById('w_text').value.trim();
+  if(!text){alert('知恵・言葉を入力してください');return;}
+  const month=+document.getElementById('w_month').value;
+  const crop=document.getElementById('w_crop').value;
+  const date=new Date().toISOString().slice(0,10);
+  wisdoms.unshift({id:nextWId++,month,crop,text,date});
+  saveWisdoms();
+  document.getElementById('w_text').value='';
+  renderWisdoms();
+  alert('知恵を保存しました！🌸');
+}
+
+function filterWisdom(m,btn){
+  wisdomMonthFilter=m;
+  document.querySelectorAll('.mf-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  renderWisdoms();
+}
+
+function renderWisdoms(){
+  const el=document.getElementById('wisdomList');
+  let filtered=wisdoms;
+  if(wisdomMonthFilter>0) filtered=wisdoms.filter(w=>w.month===wisdomMonthFilter||w.month===0);
+  if(filtered.length===0){
+    el.innerHTML='<div class="empty">🌸 まだおばあちゃんの知恵が登録されていません<br><small>作業日誌を書くか、上のフォームから追加してください</small></div>';
+    return;
+  }
+  el.innerHTML=filtered.map(w=>`
+    <div class="wisdom-card">
+      <div>
+        <span class="wisdom-month">${w.month?MONTH_NAMES[w.month]:'通年'}</span>
+        <span class="wisdom-crop" style="background:${CROP_COLORS[w.crop]||'#888'}">${w.crop}</span>
+      </div>
+      <div class="wisdom-text">「${w.text}」</div>
+      <div class="wisdom-date">記録日：${w.date}</div>
+      <button class="wisdom-del" onclick="delWisdom(${w.id})">削除</button>
+    </div>`).join('');
+}
+
+function delWisdom(id){
+  if(!confirm('削除しますか？'))return;
+  wisdoms=wisdoms.filter(w=>w.id!==id);
+  saveWisdoms();renderWisdoms();
+}
+
+// ---- タブ ----
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='list') renderList();
+  if(name==='wisdom') renderWisdoms();
+}
+
+init();
+</script>
+</body>
+</html>
