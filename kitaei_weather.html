@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="北栄農家天気"/>
+  <title>北栄町 葡萄農家天気</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <style>
+    :root{
+      --grape:#6B2D8B;--grape-l:#9B59B6;--grape-d:#4A1A6B;
+      --bg:#F8F4FF;--card:#FFF;--safe:#27AE60;--warn:#E67E22;
+      --danger:#E74C3C;--rain:#2980B9;--wind:#1ABC9C;
+      --shadow:0 2px 14px rgba(107,45,139,.13);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:#2C2C2C}
+
+    header{background:linear-gradient(135deg,var(--grape-d),var(--grape) 55%,var(--grape-l));color:#fff;padding:14px 16px 16px;text-align:center}
+    header h1{font-size:1.1rem;font-weight:700}
+    header .sub{font-size:.72rem;opacity:.8;margin-top:3px}
+
+    .update-bar{background:var(--grape-d);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:5px 12px;font-size:.72rem}
+    .refresh-btn{background:#F9CA24;color:var(--grape-d);border:none;border-radius:8px;padding:4px 11px;font-weight:700;cursor:pointer;font-size:.7rem}
+
+    .tabs{display:flex;background:var(--grape-d);overflow-x:auto;scrollbar-width:none}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab-btn{flex-shrink:0;padding:9px 10px;font-size:.73rem;font-weight:600;color:rgba(255,255,255,.5);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;transition:all .2s}
+    .tab-btn.active{color:#fff;border-bottom-color:#F9CA24}
+    .tab-content{display:none}.tab-content.active{display:block}
+
+    .container{max-width:520px;margin:0 auto;padding:12px 10px 44px}
+    .card{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:14px;margin-bottom:10px}
+    .sec{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7F8C8D;margin-bottom:8px}
+
+    /* 現在 */
+    .cur-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:13px}
+    .cur-icon{font-size:3rem;line-height:1}
+    .cur-temp{font-size:2.8rem;font-weight:700;color:var(--grape);line-height:1}
+    .cur-temp span{font-size:1rem;font-weight:400}
+    .cur-desc{font-size:.85rem;color:#7F8C8D;margin-top:3px}
+    .cur-feels{font-size:.72rem;color:#7F8C8D}
+    .metrics{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .metric{background:var(--bg);border-radius:10px;padding:9px 11px}
+    .metric .ml{font-size:.65rem;color:#7F8C8D;margin-bottom:2px}
+    .metric .mv{font-size:.95rem;font-weight:700}
+
+    /* アラート */
+    .alert{border-radius:10px;padding:9px 12px;margin-bottom:7px;display:flex;gap:9px;align-items:flex-start}
+    .alert.safe{background:#E8F8EF;border-left:4px solid var(--safe)}
+    .alert.warn{background:#FEF3E2;border-left:4px solid var(--warn)}
+    .alert.danger{background:#FDEAEA;border-left:4px solid var(--danger)}
+    .alert .ai{font-size:1.1rem;flex-shrink:0}
+    .alert .at{font-size:.82rem;font-weight:700;margin-bottom:2px}
+    .alert.safe .at{color:var(--safe)}.alert.warn .at{color:var(--warn)}.alert.danger .at{color:var(--danger)}
+    .alert .ab{font-size:.73rem;line-height:1.4}
+
+    /* 時間別 */
+    .hscroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+    .hscroll::-webkit-scrollbar{height:3px}
+    .hscroll::-webkit-scrollbar-thumb{background:var(--grape-l);border-radius:3px}
+    .hc{background:var(--bg);border-radius:10px;padding:8px 7px;text-align:center;flex-shrink:0;min-width:58px}
+    .hc.now{background:linear-gradient(135deg,var(--grape),var(--grape-l));color:#fff}
+    .hc .ht{font-size:.63rem;opacity:.7}.hc.now .ht{opacity:.9}
+    .hc .hi{font-size:1.2rem;margin:3px 0}
+    .hc .hv{font-size:.85rem;font-weight:700}
+    .hc .hr{font-size:.62rem;color:#3498DB;margin-top:2px}.hc.now .hr{color:#AED6F1}
+
+    /* 病害 */
+    .disease-list{display:grid;gap:8px}
+    .dc{border-radius:12px;padding:12px 14px;border-left:5px solid}
+    .dc.safe{background:#E8F8EF;border-color:var(--safe)}
+    .dc.warn{background:#FEF3E2;border-color:var(--warn)}
+    .dc.danger{background:#FDEAEA;border-color:var(--danger)}
+    .dc .dn{font-size:.88rem;font-weight:700}
+    .dc.safe .dn{color:var(--safe)}.dc.warn .dn{color:var(--warn)}.dc.danger .dn{color:var(--danger)}
+    .dc .dr{font-size:.73rem;margin-top:3px;line-height:1.4;color:#444}
+    .dlv{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:8px;display:inline-block;margin-top:5px;color:#fff}
+    .dc.safe .dlv{background:var(--safe)}.dc.warn .dlv{background:var(--warn)}.dc.danger .dlv{background:var(--danger)}
+
+    /* レーダー */
+    #leafletMap{width:100%;height:70vh;min-height:300px;max-height:520px;border-radius:12px;z-index:0}
+    .radar-controls{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+    .radar-btn{background:var(--grape);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.78rem;font-weight:700;cursor:pointer}
+    .radar-btn.stop{background:var(--danger)}
+    .frame-info{font-size:.72rem;color:#7F8C8D;flex:1}
+    .timeline{width:100%;margin-top:7px;accent-color:var(--grape)}
+
+    /* 風 */
+    .wind-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+    .compass{width:90px;height:90px;flex-shrink:0}
+    .wind-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;flex:1}
+    .wc{background:#E8FAF8;border-radius:10px;padding:9px;text-align:center}
+    .wc .wl{font-size:.63rem;color:#7F8C8D;margin-bottom:2px}
+    .wc .wv{font-size:1.3rem;font-weight:800;color:var(--wind)}
+    .wc .wu{font-size:.62rem;color:#7F8C8D}
+
+    /* 週間 */
+    .week-row{display:grid;grid-template-columns:52px 28px 1fr auto;align-items:center;gap:8px;background:var(--card);border-radius:11px;box-shadow:var(--shadow);padding:10px 12px;margin-bottom:6px}
+    .wd-day{font-size:.8rem;font-weight:600}
+    .wd-icon{font-size:1.3rem}
+    .wd-rain{font-size:.68rem;color:var(--rain)}
+    .wd-temp{text-align:right}
+    .wt-hi{color:var(--danger);font-size:.85rem;font-weight:700}
+    .wt-lo{color:var(--rain);font-size:.75rem;display:block}
+
+    /* ローディング・エラー */
+    .loading{text-align:center;padding:50px 20px;color:var(--grape)}
+    .spinner{width:36px;height:36px;border:4px solid #EDD5F5;border-top-color:var(--grape);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .error-box{background:#FDEAEA;border-radius:12px;padding:18px;text-align:center;margin:8px 0}
+    .error-box .et{font-size:.92rem;font-weight:700;color:var(--danger);margin-bottom:6px}
+    .error-box .eb{font-size:.78rem;color:#555;line-height:1.6;margin-bottom:12px}
+    .retry-btn{background:var(--grape);color:#fff;border:none;border-radius:10px;padding:10px 22px;font-size:.82rem;font-weight:700;cursor:pointer}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🍇 北栄町 ハウス葡萄 気象モニター</h1>
+  <div class="sub">鳥取県東伯郡北栄町 — ゲリラ豪雨・風・病害リアルタイム監視</div>
+</header>
+
+<div class="update-bar">
+  <span id="updateTime">読み込み中...</span>
+  <button class="refresh-btn" onclick="loadAll()">今すぐ更新</button>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('current',this)">🌤️ 概況</button>
+  <button class="tab-btn" onclick="switchTab('disease',this)">🦠 病害リスク</button>
+  <button class="tab-btn" onclick="switchTab('radar',this)">🌧️ 雨雲レーダー</button>
+  <button class="tab-btn" onclick="switchTab('wind',this)">💨 風</button>
+  <button class="tab-btn" onclick="switchTab('weekly',this)">📅 週間</button>
+</div>
+
+<div class="tab-content active" id="tab-current">
+  <div class="container"><div id="currentContent"><div class="loading"><div class="spinner"></div>気象データ取得中...</div></div></div>
+</div>
+
+<div class="tab-content" id="tab-disease">
+  <div class="container"><div id="diseaseContent"><div class="loading"><div class="spinner"></div>データ取得中...</div></div></div>
+</div>
+
+<div class="tab-content" id="tab-radar">
+  <div class="container">
+    <div class="card">
+      <div class="sec">🛰️ 雨雲レーダー（北栄町周辺）</div>
+      <div id="leafletMap"></div>
+      <div class="radar-controls">
+        <button class="radar-btn" id="playBtn" onclick="toggleAnim()">▶ 再生</button>
+        <div class="frame-info" id="frameInfo">読み込み中...</div>
+        <span id="frameBadge" style="font-size:.65rem;padding:2px 7px;border-radius:7px;font-weight:700"></span>
+      </div>
+      <input type="range" class="timeline" id="timeline" min="0" value="0" oninput="seekFrame(+this.value)">
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-wind">
+  <div class="container"><div id="windContent"><div class="loading"><div class="spinner"></div>データ取得中...</div></div></div>
+</div>
+
+<div class="tab-content" id="tab-weekly">
+  <div class="container"><div id="weeklyContent"><div class="loading"><div class="spinner"></div>データ取得中...</div></div></div>
+</div>
+
+<script>
+const LAT=35.51, LON=133.85;
+const WMO={
+  0:['快晴','☀️'],1:['ほぼ晴れ','🌤️'],2:['一部曇り','⛅'],3:['曇り','☁️'],
+  45:['霧','🌫️'],48:['着氷霧','🌫️'],
+  51:['弱い霧雨','🌦️'],53:['霧雨','🌦️'],55:['強い霧雨','🌧️'],
+  61:['小雨','🌧️'],63:['雨','🌧️'],65:['大雨','🌧️'],
+  71:['小雪','🌨️'],73:['雪','🌨️'],75:['大雪','❄️'],
+  80:['にわか雨','🌦️'],81:['雨','🌧️'],82:['激しいにわか雨','⛈️'],
+  95:['雷雨','⛈️'],96:['雷雨(雹)','⛈️'],99:['激しい雷雨','⛈️']
+};
+const DIRS=['北','北北東','北東','東北東','東','東南東','南東','南南東','南','南南西','南西','西南西','西','西北西','北西','北北西'];
+
+let WD=null, nowIdx=0;
+
+function wCode(c){return WMO[c]||['不明','🌡️']}
+function wDir(d){return DIRS[Math.round(d/22.5)%16]}
+
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='radar'&&!leafletMap) setTimeout(initLeaflet,100);
+}
+
+async function loadAll(){
+  document.getElementById('updateTime').textContent='更新中...';
+  try{
+    const url='https://api.open-meteo.com/v1/forecast'
+      +'?latitude='+LAT+'&longitude='+LON
+      +'&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code'
+      +',wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation'
+      +'&hourly=temperature_2m,relative_humidity_2m,precipitation_probability'
+      +',precipitation,weather_code,wind_speed_10m,wind_direction_10m'
+      +'&daily=weather_code,temperature_2m_max,temperature_2m_min'
+      +',precipitation_sum,precipitation_probability_max,wind_speed_10m_max'
+      +'&timezone=Asia%2FTokyo&forecast_days=7&wind_speed_unit=ms';
+
+    const res=await fetch(url);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    WD=await res.json();
+
+    // JST現在時刻で時間インデックスを特定
+    const todayStr=WD.daily.time[0];
+    const h=new Date().getHours();
+    const target=todayStr+'T'+String(h).padStart(2,'0')+':00';
+    nowIdx=WD.hourly.time.indexOf(target);
+    if(nowIdx<0) nowIdx=0;
+
+    renderCurrent();
+    renderDisease();
+    renderWind();
+    renderWeekly();
+
+    const n=new Date();
+    document.getElementById('updateTime').textContent=
+      '更新: '+n.getHours()+':'+String(n.getMinutes()).padStart(2,'0');
+  }catch(e){
+    showError();
+  }
+}
+
+function showError(){
+  const html=`<div class="error-box">
+    <div class="et">⚠️ データ取得に失敗しました</div>
+    <div class="eb">
+      Wi-Fi またはモバイル通信に接続しているか確認してください。<br>
+      このアプリは <strong>Safari</strong> で開く必要があります。<br>
+      Google ドライブのプレビュー画面では動作しません。
+    </div>
+    <button class="retry-btn" onclick="loadAll()">🔄 再試行</button>
+  </div>`;
+  ['currentContent','diseaseContent','windContent','weeklyContent'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML=html;
+  });
+  document.getElementById('updateTime').textContent='取得失敗';
+}
+
+function renderCurrent(){
+  const c=WD.current, h=WD.hourly;
+  const [desc,icon]=wCode(c.weather_code);
+
+  // アラート
+  const alerts=[];
+  if(c.precipitation>3) alerts.push({t:'danger',i:'⛈️',title:'大雨注意',body:'現在'+c.precipitation+'mm/h の降水中。圃場・排水路を確認してください。'});
+  else if(c.precipitation>0.5) alerts.push({t:'warn',i:'🌧️',title:'降水中',body:'現在'+c.precipitation+'mm/h。作業の見直しを。'});
+  if(c.wind_gusts_10m>12) alerts.push({t:'danger',i:'💨',title:'強風注意',body:'瞬間最大風速'+c.wind_gusts_10m+'m/s。ハウスの固定・換気口を確認してください。'});
+  else if(c.wind_gusts_10m>8) alerts.push({t:'warn',i:'💨',title:'やや強い風',body:'瞬間風速'+c.wind_gusts_10m+'m/s。換気管理にご注意ください。'});
+  // 今後6時間の雨予報
+  for(let i=1;i<=6;i++){
+    const idx=nowIdx+i;
+    if(idx<h.time.length&&h.precipitation[idx]>2){
+      const hr=new Date(h.time[idx]).getHours();
+      alerts.push({t:'warn',i:'🌦️',title:hr+'時頃から強い雨の予報',body:'降水量'+h.precipitation[idx].toFixed(1)+'mm 見込み。屋外作業は早めに終えてください。'});
+      break;
+    }
+  }
+  if(!alerts.length) alerts.push({t:'safe',i:'✅',title:'現在問題なし',body:'天候は安定しています。通常の農作業が可能です。'});
+
+  // 時間別（次12時間）
+  let hourly='';
+  for(let i=0;i<12;i++){
+    const idx=nowIdx+i;
+    if(idx>=h.time.length) break;
+    const hr=new Date(h.time[idx]).getHours();
+    const [,hi]=wCode(h.weather_code[idx]);
+    const rain=h.precipitation[idx];
+    const prob=h.precipitation_probability[idx];
+    hourly+=`<div class="hc ${i===0?'now':''}">
+      <div class="ht">${i===0?'今':hr+'時'}</div>
+      <div class="hi">${hi}</div>
+      <div class="hv">${Math.round(h.temperature_2m[idx])}°</div>
+      <div class="hr">${rain>0?rain.toFixed(1)+'mm':prob>0?prob+'%':''}</div>
+    </div>`;
+  }
+
+  document.getElementById('currentContent').innerHTML=`
+    <div class="card">
+      <div class="sec">現在の天気 — 北栄町</div>
+      <div class="cur-row">
+        <div class="cur-icon">${icon}</div>
+        <div>
+          <div class="cur-temp">${Math.round(c.temperature_2m)}<span>°C</span></div>
+          <div class="cur-desc">${desc}</div>
+          <div class="cur-feels">体感 ${Math.round(c.apparent_temperature)}°C</div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="ml">💧 湿度</div><div class="mv">${c.relative_humidity_2m}%</div></div>
+        <div class="metric"><div class="ml">🌧️ 降水量</div><div class="mv">${c.precipitation} mm/h</div></div>
+        <div class="metric"><div class="ml">💨 風速</div><div class="mv">${c.wind_speed_10m} m/s</div></div>
+        <div class="metric"><div class="ml">🧭 風向</div><div class="mv">${wDir(c.wind_direction_10m)}</div></div>
+        <div class="metric"><div class="ml">⚡ 最大瞬間</div><div class="mv">${c.wind_gusts_10m} m/s</div></div>
+        <div class="metric"><div class="ml">🌡️ 体感温度</div><div class="mv">${Math.round(c.apparent_temperature)}°C</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec">⚠️ アラート</div>
+      ${alerts.map(a=>`<div class="alert ${a.t}"><div class="ai">${a.i}</div><div><div class="at">${a.title}</div><div class="ab">${a.body}</div></div></div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="sec">🕐 時間別予報（次12時間）</div>
+      <div class="hscroll">${hourly}</div>
+    </div>`;
+}
+
+function renderDisease(){
+  const c=WD.current;
+  const T=c.temperature_2m, RH=c.relative_humidity_2m, R=c.precipitation;
+  function lv(s){return s>=70?'danger':s>=40?'warn':'safe'}
+  function lt(s){return s>=70?'⚠️ 高リスク':s>=40?'⚡ 中リスク':'✅ 低リスク'}
+
+  // 灰色かび病
+  let bot=0;
+  if(T>=15&&T<=25) bot+=40; else if(T>10) bot+=15;
+  if(RH>=90) bot+=50; else if(RH>=80) bot+=30; else if(RH>=70) bot+=10;
+  if(R>0) bot+=10; bot=Math.min(100,bot);
+
+  // べと病
+  let dm=0;
+  if(T>=10&&T<=25) dm+=35;
+  if(RH>=95) dm+=50; else if(RH>=85) dm+=30; else if(RH>=75) dm+=10;
+  if(R>0) dm+=25; dm=Math.min(100,dm);
+
+  // うどんこ病
+  let pm=0;
+  if(T>=20&&T<=30) pm+=40; else if(T>=15) pm+=20;
+  if(RH>=50&&RH<=80) pm+=40; else if(RH<50) pm+=20;
+  pm=Math.min(100,pm);
+
+  // 炭疽病
+  let ant=0;
+  if(T>=25) ant+=40; else if(T>=20) ant+=20;
+  if(R>1) ant+=40; else if(RH>=85) ant+=20;
+  ant=Math.min(100,ant);
+
+  const list=[
+    {name:'🍇 灰色かび病（ボトリチス）',score:bot,desc:`15〜25°C・高湿度で多発。収穫前後に特に注意。換気を徹底し、果房周辺の除葉を。`},
+    {name:'🌿 べと病',score:dm,desc:`雨・夜露で感染。葉裏の油浸状斑点を早期発見。薬剤散布のタイミングを逃さずに。`},
+    {name:'⬜ うどんこ病',score:pm,desc:`乾燥気味の天候で発生。新梢・若葉の白い粉状物に注意。早期防除が重要。`},
+    {name:'🔴 炭疽病',score:ant,desc:`高温多雨期に多発。果粒の褐色円形病斑を確認したら即対処。`},
+  ];
+
+  document.getElementById('diseaseContent').innerHTML=`
+    <div class="card">
+      <div class="sec">🦠 現在の病害リスク判定</div>
+      <div style="font-size:.72rem;color:#7F8C8D;margin-bottom:10px">気温${T}°C・湿度${RH}%・降水${R}mm/h をもとに算出</div>
+      <div class="disease-list">
+        ${list.map(d=>`<div class="dc ${lv(d.score)}">
+          <div class="dn">${d.name}</div>
+          <div class="dr">${d.desc}</div>
+          <span class="dlv">${lt(d.score)}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="card" style="font-size:.74rem;color:#555;line-height:1.7">
+      <div class="sec">📌 注意事項</div>
+      この判定は気象データから自動計算したものです。<br>
+      実際の防除は<strong>鳥取県農業改良普及所</strong>の指導に従ってください。
+    </div>`;
+}
+
+function renderWind(){
+  const c=WD.current, h=WD.hourly;
+  const deg=c.wind_direction_10m;
+  const svg=`<svg class="compass" viewBox="0 0 90 90">
+    <circle cx="45" cy="45" r="42" fill="#E8FAF8" stroke="#1ABC9C" stroke-width="2"/>
+    <text x="45" y="14" text-anchor="middle" font-size="9" fill="#1ABC9C" font-weight="bold">北</text>
+    <text x="45" y="82" text-anchor="middle" font-size="9" fill="#1ABC9C" font-weight="bold">南</text>
+    <text x="8"  y="49" text-anchor="middle" font-size="9" fill="#1ABC9C" font-weight="bold">西</text>
+    <text x="82" y="49" text-anchor="middle" font-size="9" fill="#1ABC9C" font-weight="bold">東</text>
+    <g transform="translate(45,45) rotate(${deg})">
+      <polygon points="0,-28 6,10 0,4 -6,10" fill="#E74C3C"/>
+      <polygon points="0,28 6,10 0,4 -6,10" fill="#95A5A6"/>
+    </g></svg>`;
+
+  let rows='';
+  for(let i=0;i<12;i++){
+    const idx=nowIdx+i;
+    if(idx>=h.time.length) break;
+    const hr=new Date(h.time[idx]).getHours();
+    const ws=h.wind_speed_10m[idx];
+    const wd=wDir(h.wind_direction_10m[idx]);
+    const bw=Math.min(100,ws*8);
+    const col=ws>10?'#E74C3C':ws>7?'#E67E22':ws>4?'#F9CA24':'#27AE60';
+    rows+=`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #F0E8FF;font-size:.74rem">
+      <span style="min-width:34px;color:#7F8C8D">${i===0?'今':hr+'時'}</span>
+      <span style="min-width:28px;font-size:.68rem">${wd}</span>
+      <div style="flex:1;height:8px;background:#EEE;border-radius:4px;overflow:hidden">
+        <div style="width:${bw}%;height:100%;background:${col};border-radius:4px"></div>
+      </div>
+      <span style="min-width:42px;text-align:right;font-weight:700">${ws} m/s</span>
+    </div>`;
+  }
+
+  document.getElementById('windContent').innerHTML=`
+    <div class="card">
+      <div class="sec">💨 現在の風</div>
+      <div class="wind-top">
+        ${svg}
+        <div class="wind-grid">
+          <div class="wc"><div class="wl">風速</div><div class="wv">${c.wind_speed_10m}</div><div class="wu">m/s</div></div>
+          <div class="wc"><div class="wl">瞬間最大</div><div class="wv">${c.wind_gusts_10m}</div><div class="wu">m/s</div></div>
+          <div class="wc" style="grid-column:span 2"><div class="wl">風向</div><div class="wv" style="font-size:1rem">${wDir(deg)}（${deg}°）</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec">🕐 今後12時間の風速</div>${rows}
+    </div>`;
+}
+
+function renderWeekly(){
+  const d=WD.daily;
+  const days=['日','月','火','水','木','金','土'];
+  let html='';
+  for(let i=0;i<d.time.length;i++){
+    const date=new Date(d.time[i]+'T12:00:00+09:00');
+    const label=i===0?'今日':i===1?'明日':days[date.getDay()]+'曜';
+    const [,ic]=wCode(d.weather_code[i]);
+    const prob=d.precipitation_probability_max[i];
+    const rain=d.precipitation_sum[i];
+    html+=`<div class="week-row">
+      <div class="wd-day">${label}</div>
+      <div class="wd-icon">${ic}</div>
+      <div class="wd-rain">${prob}% ${rain>0?rain.toFixed(1)+'mm':''}</div>
+      <div class="wd-temp">
+        <span class="wt-hi">${Math.round(d.temperature_2m_max[i])}°</span>
+        <span class="wt-lo">${Math.round(d.temperature_2m_min[i])}°</span>
+      </div>
+    </div>`;
+  }
+  document.getElementById('weeklyContent').innerHTML=`<div style="padding:2px 0">${html}</div>`;
+}
+
+// ---- Leaflet + RainViewer ----
+let leafletMap=null,rvLayer=null,rvFrames=[],rvIdx=0,rvPlaying=false,rvTimer=null;
+
+function initLeaflet(){
+  if(leafletMap) return;
+  leafletMap=L.map('leafletMap',{maxZoom:14}).setView([LAT,LON],10);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© OpenStreetMap',maxZoom:19
+  }).addTo(leafletMap);
+  L.marker([LAT,LON]).addTo(leafletMap).bindPopup('🍇 北栄町 葡萄畑').openPopup();
+  loadRainViewer();
+}
+
+async function loadRainViewer(){
+  try{
+    const r=await fetch('https://api.rainviewer.com/public/weather-maps.json');
+    const d=await r.json();
+    const past=(d.radar&&d.radar.past)||[];
+    const nowcast=(d.radar&&d.radar.nowcast)||[];
+    rvFrames=[...past,...nowcast];
+    if(!rvFrames.length){document.getElementById('frameInfo').textContent='データなし';return;}
+    document.getElementById('timeline').max=rvFrames.length-1;
+    seekFrame(past.length>0?past.length-1:0);
+    setTimeout(toggleAnim,800);
+  }catch(e){
+    document.getElementById('frameInfo').textContent='レーダー読込失敗（通信確認を）';
+  }
+}
+
+function seekFrame(idx){
+  if(!rvFrames.length) return;
+  idx=Math.max(0,Math.min(idx,rvFrames.length-1));
+  rvIdx=idx;
+  if(rvLayer){leafletMap.removeLayer(rvLayer);rvLayer=null;}
+  const f=rvFrames[idx];
+  rvLayer=L.tileLayer(
+    'https://tilecache.rainviewer.com'+f.path+'/256/{z}/{x}/{y}/2/1_1.png',
+    {opacity:.72,maxZoom:14,maxNativeZoom:8,
+     errorTileUrl:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='}
+  ).addTo(leafletMap);
+  document.getElementById('timeline').value=idx;
+  const ts=new Date(f.time*1000+9*3600000);
+  const hh=String(ts.getUTCHours()).padStart(2,'0');
+  const mm=String(ts.getUTCMinutes()).padStart(2,'0');
+  document.getElementById('frameInfo').textContent=hh+':'+mm+' JST';
+  const badge=document.getElementById('frameBadge');
+  const pastLen=rvFrames.length-((WD&&WD.radar&&WD.radar.nowcast)||[]).length;
+  if(idx>=pastLen){badge.textContent='予測';badge.style.cssText='background:#FEF3E2;color:#E67E22;font-size:.65rem;padding:2px 7px;border-radius:7px;font-weight:700';}
+  else{badge.textContent='実測';badge.style.cssText='background:#E8F8EF;color:#27AE60;font-size:.65rem;padding:2px 7px;border-radius:7px;font-weight:700';}
+}
+
+function toggleAnim(){
+  if(rvPlaying){
+    clearInterval(rvTimer);rvPlaying=false;
+    document.getElementById('playBtn').textContent='▶ 再生';
+    document.getElementById('playBtn').classList.remove('stop');
+  }else{
+    rvPlaying=true;
+    document.getElementById('playBtn').textContent='⏹ 停止';
+    document.getElementById('playBtn').classList.add('stop');
+    rvTimer=setInterval(()=>{rvIdx=(rvIdx+1)%rvFrames.length;seekFrame(rvIdx);},600);
+  }
+}
+
+// 起動・自動更新
+loadAll();
+setInterval(loadAll,10*60*1000);
+</script>
+</body>
+</html>
