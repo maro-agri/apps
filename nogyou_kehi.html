@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="農業経費帳"/>
+  <title>農業フリーランス 経費管理・確定申告</title>
+  <style>
+    :root{
+      --green:#27AE60;--green-l:#2ECC71;--green-d:#1E8449;
+      --orange:#E67E22;--red:#E74C3C;--blue:#2980B9;
+      --bg:#F0FFF4;--card:#FFF;--text:#2C2C2C;--muted:#7F8C8D;
+      --shadow:0 2px 14px rgba(39,174,96,.13);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text)}
+
+    header{background:linear-gradient(135deg,var(--green-d),var(--green),var(--green-l));color:#fff;padding:14px 16px;text-align:center}
+    header h1{font-size:1.05rem;font-weight:700}
+    header .sub{font-size:.72rem;opacity:.85;margin-top:3px}
+
+    .tabs{display:flex;background:var(--green-d);overflow-x:auto;scrollbar-width:none}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab-btn{flex-shrink:0;padding:10px 12px;font-size:.75rem;font-weight:600;color:rgba(255,255,255,.55);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+    .tab-btn.active{color:#fff;border-bottom-color:#F9CA24}
+    .tab-content{display:none}.tab-content.active{display:block}
+
+    .container{max-width:520px;margin:0 auto;padding:12px 10px 50px}
+    .card{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:14px;margin-bottom:10px}
+    .sec{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:9px}
+
+    /* 経費カード */
+    .kehi-item{border-radius:11px;padding:11px 13px;margin-bottom:8px;border-left:4px solid var(--green);background:#F9FFFC}
+    .kehi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+    .kehi-name{font-size:.88rem;font-weight:700}
+    .kehi-badge{font-size:.65rem;padding:2px 7px;border-radius:8px;background:var(--green);color:#fff;font-weight:700}
+    .kehi-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+    .kehi-label{font-size:.68rem;color:var(--muted);min-width:60px}
+    .kehi-input{flex:1;border:1.5px solid #D5EFE0;border-radius:7px;padding:5px 8px;font-size:.82rem;text-align:right;background:#fff}
+    .kehi-input:focus{outline:none;border-color:var(--green)}
+    .kehi-result{font-size:.78rem;font-weight:700;color:var(--green);text-align:right;margin-top:4px}
+    .kehi-del{background:#FDEAEA;color:var(--red);border:none;border-radius:7px;padding:3px 8px;font-size:.68rem;cursor:pointer}
+
+    /* 合計バー */
+    .total-bar{background:linear-gradient(135deg,var(--green-d),var(--green));color:#fff;border-radius:12px;padding:13px 16px;margin-bottom:10px}
+    .total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+    .total-row:last-child{margin-bottom:0}
+    .tl{font-size:.76rem;opacity:.85}
+    .tv{font-size:1.1rem;font-weight:800}
+    .tv.big{font-size:1.35rem}
+
+    /* 追加ボタン */
+    .add-btn{width:100%;background:var(--green);color:#fff;border:none;border-radius:11px;padding:11px;font-size:.82rem;font-weight:700;cursor:pointer;margin-bottom:10px}
+
+    /* 確定申告シミュレーター */
+    .sim-input-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .sim-label{font-size:.8rem;min-width:120px;color:var(--text)}
+    .sim-input{flex:1;border:1.5px solid #D5EFE0;border-radius:8px;padding:7px 10px;font-size:.88rem;text-align:right}
+    .sim-input:focus{outline:none;border-color:var(--green)}
+    .sim-unit{font-size:.75rem;color:var(--muted)}
+
+    .result-box{border-radius:12px;padding:13px;margin-bottom:8px}
+    .result-box.income{background:#E8F8EF;border-left:4px solid var(--green)}
+    .result-box.deduct{background:#FEF3E2;border-left:4px solid var(--orange)}
+    .result-box.tax{background:#FDEAEA;border-left:4px solid var(--red)}
+    .result-box.save{background:#EBF5FB;border-left:4px solid var(--blue)}
+    .rb-title{font-size:.75rem;font-weight:700;margin-bottom:6px}
+    .result-box.income .rb-title{color:var(--green)}
+    .result-box.deduct .rb-title{color:var(--orange)}
+    .result-box.tax .rb-title{color:var(--red)}
+    .result-box.save .rb-title{color:var(--blue)}
+    .rb-row{display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:3px}
+    .rb-val{font-weight:700}
+    .rb-total{font-size:1.05rem;font-weight:800;text-align:right;margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,.08)}
+
+    /* 按分根拠 */
+    .konky-box{background:#F9FFFC;border-radius:11px;padding:12px;margin-bottom:10px;border:1.5px solid #A9DFBF}
+    .konky-title{font-size:.82rem;font-weight:700;color:var(--green-d);margin-bottom:6px}
+    .konky-text{font-size:.75rem;line-height:1.7;color:#333;white-space:pre-wrap;width:100%;border:1.5px solid #A9DFBF;border-radius:8px;padding:8px 10px;resize:vertical;min-height:120px;font-family:inherit;background:#FAFFFC}
+    .konky-text:focus{outline:none;border-color:var(--green)}
+    .konky-saved{font-size:.68rem;color:var(--green);margin-top:4px;display:none}
+    .copy-btn{background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:.72rem;font-weight:700;cursor:pointer;margin-top:8px}
+
+    .warn-box{background:#FEF3E2;border-radius:10px;padding:10px 12px;font-size:.74rem;line-height:1.6;color:#555;border-left:3px solid var(--orange)}
+
+    /* 開業費 */
+    .kaigyohi-item{border-radius:11px;padding:11px 13px;margin-bottom:8px;border-left:4px solid var(--orange);background:#FFFDF5}
+    .kaigyohi-badge{font-size:.65rem;padding:2px 7px;border-radius:8px;background:var(--orange);color:#fff;font-weight:700}
+    .kaigyohi-bar{background:linear-gradient(135deg,#d35400,var(--orange),#f39c12);color:#fff;border-radius:12px;padding:13px 16px;margin-bottom:10px}
+    .kaigyohi-note{font-size:.68rem;color:var(--muted);margin-top:3px;font-style:italic}
+    .kaigyohi-memo{width:100%;border:1.5px solid #FAD7A0;border-radius:7px;padding:4px 8px;font-size:.72rem;color:#555;background:#FFFDF5;margin-top:4px}
+    .kaigyohi-memo:focus{outline:none;border-color:var(--orange)}
+    .add-btn.orange{background:var(--orange)}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 農業フリーランス 経費管理帳</h1>
+  <div class="sub">北栄町 葡萄農家 ／ 確定申告サポートツール</div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('kehi',this)">📋 経費管理</button>
+  <button class="tab-btn" onclick="switchTab('sim',this)">🧮 確定申告</button>
+  <button class="tab-btn" onclick="switchTab('schedule',this)">📅 開業準備</button>
+  <button class="tab-btn" onclick="switchTab('konky',this)">📄 按分根拠文</button>
+  <button class="tab-btn" onclick="switchTab('itaku',this)">📝 業務委託</button>
+</div>
+
+<!-- 経費管理 -->
+<div class="tab-content active" id="tab-kehi">
+  <div class="container">
+
+    <div class="total-bar" id="totalBar">
+      <div class="total-row"><span class="tl">月の経費合計（按分後）</span><span class="tv big" id="totalMonth">—</span></div>
+      <div class="total-row"><span class="tl">年間経費合計（×12）</span><span class="tv" id="totalYear">—</span></div>
+    </div>
+
+    <div class="card">
+      <div class="sec">💴 経費一覧（編集できます）</div>
+      <div id="kehiList"></div>
+      <button class="add-btn" onclick="addItem()">＋ 経費を追加する</button>
+    </div>
+
+    <div class="card" style="font-size:.74rem;color:#555;line-height:1.7">
+      <div class="sec">📌 メモ</div>
+      農業資材・農薬・肥料・種苗費は別途帳簿に記録してください。<br>
+      農機具は減価償却費として計上します（購入時に要確認）。
+    </div>
+
+    <!-- 開業費 -->
+    <div class="kaigyohi-bar">
+      <div class="total-row"><span class="tl">🗂 開業費合計（任意償却）</span><span class="tv big" id="kaigyohiTotal">—</span></div>
+      <div style="font-size:.68rem;opacity:.85;margin-top:3px">利益が出た年に好きなだけ経費化できる「節税の切り札」</div>
+    </div>
+    <div class="card">
+      <div class="sec">📁 開業費一覧（開業前の事業準備費用）</div>
+      <div id="kaigyohiList"></div>
+      <button class="add-btn orange" onclick="addKaigyohi()">＋ 開業費を追加する</button>
+    </div>
+    <div class="warn-box" style="margin-bottom:10px">
+      💡 <strong>開業費とは？</strong><br>
+      開業日（5/31）より前に支払った事業準備費用。任意償却で<strong>利益が出た年に自由に経費化</strong>できます。2029年の年金収入が増える年に使うと節税効果が大きくなります。
+    </div>
+
+  </div>
+</div>
+
+<!-- 確定申告シミュレーター -->
+<div class="tab-content" id="tab-sim">
+  <div class="container">
+    <div class="card">
+      <div class="sec">📥 収入を入力</div>
+      <div class="sim-input-row">
+        <div class="sim-label">農業委託料（年間）</div>
+        <input class="sim-input" id="s_nogyou" type="number" value="550000" oninput="calcSim()">
+        <span class="sim-unit">円</span>
+      </div>
+      <div class="sim-input-row">
+        <div class="sim-label">パート給与（年間）</div>
+        <input class="sim-input" id="s_part" type="number" value="578049" oninput="calcSim()">
+        <span class="sim-unit">円</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">📤 控除の確認</div>
+      <div class="sim-input-row">
+        <div class="sim-label">青色申告特別控除</div>
+        <input class="sim-input" id="s_aoiro" type="number" value="650000" oninput="calcSim()">
+        <span class="sim-unit">円</span>
+      </div>
+      <div class="sim-input-row">
+        <div class="sim-label">基礎控除</div>
+        <input class="sim-input" id="s_kiso" type="number" value="480000" oninput="calcSim()">
+        <span class="sim-unit">円</span>
+      </div>
+      <div class="sim-input-row">
+        <div class="sim-label">社会保険料控除<br><span style="font-size:.65rem;color:var(--muted)">（国保・年金保険料）</span></div>
+        <input class="sim-input" id="s_shakai" type="number" value="15000" oninput="calcSim()">
+        <span class="sim-unit">円</span>
+      </div>
+      <div class="sim-input-row" style="opacity:.6">
+        <div class="sim-label">年間経費合計</div>
+        <input class="sim-input" id="s_kehi" type="number" readonly style="background:#F5F5F5">
+        <span class="sim-unit">円</span>
+      </div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:4px">※経費は「経費管理」タブから自動反映</div>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--orange)">
+      <div class="sec">🗂 開業費残高（任意償却・今年は温存）</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:.8rem">開業費合計（未償却）</span>
+        <span style="font-size:1.1rem;font-weight:800;color:var(--orange)" id="sim_kaigyohi_total">—</span>
+      </div>
+      <div style="font-size:.68rem;color:var(--muted);line-height:1.6">
+        ※今年は課税所得ゼロのため経費化せず温存<br>
+        ※2029年の年金収入が増えた年に使うと節税効果MAX
+      </div>
+    </div>
+
+    <div id="simResult"></div>
+
+    <div class="warn-box">
+      ⚠️ これはあくまで<strong>目安のシミュレーション</strong>です。<br>
+      実際の申告は源泉徴収票・帳簿をもとに計算し、必要に応じて税理士や税務署に確認してください。
+    </div>
+  </div>
+</div>
+
+<!-- 開業準備スケジュール -->
+<div class="tab-content" id="tab-schedule">
+  <div class="container">
+
+    <div style="background:linear-gradient(135deg,var(--green-d),var(--green));color:#fff;border-radius:12px;padding:14px 16px;margin-bottom:14px;text-align:center">
+      <div style="font-size:1rem;font-weight:800">🗓 開業までのやることリスト</div>
+      <div style="font-size:.75rem;opacity:.85;margin-top:4px">まろさん・農業フリーランス 開業日：2026年5月31日</div>
+    </div>
+
+    <div id="scheduleList"></div>
+
+    <div class="warn-box" style="margin-top:12px">
+      💡 倉吉税務署（北栄町管轄）に開業届を提出します。<br>
+      開業届と青色申告承認申請書は<strong>同じ日に一緒に提出</strong>するのが効率的です。
+    </div>
+
+    <!-- 開業届記入ガイド -->
+    <div style="background:linear-gradient(135deg,#2980B9,#1a5276);color:#fff;border-radius:12px;padding:13px 16px;margin-top:14px;margin-bottom:10px">
+      <div style="font-size:.9rem;font-weight:800">📄 開業届 記入内容（まろさん用）</div>
+      <div style="font-size:.7rem;opacity:.85;margin-top:3px">個人事業の開廃業等届出書</div>
+    </div>
+
+    <div class="card" style="border-left:4px solid #2980B9">
+      <div class="sec" style="color:#2980B9">提出先・基本情報</div>
+      <div style="font-size:.78rem;line-height:2.1;color:#333">
+        <div>📮 <strong>提出先：</strong>倉吉税務署長 あて</div>
+        <div>📅 <strong>提出日：</strong>令和8年5月31日</div>
+        <div>🏠 <strong>納税地：</strong>鳥取県東伯郡湯梨浜町（ご自宅の住所）</div>
+        <div>👤 <strong>氏名：</strong>（ご本名をフルネームで）</div>
+        <div>🎂 <strong>生年月日：</strong>（ご自身の生年月日）</div>
+        <div>🔢 <strong>個人番号：</strong>マイナンバー12桁</div>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:4px solid #27AE60">
+      <div class="sec" style="color:var(--green-d)">事業内容</div>
+      <div style="font-size:.78rem;line-height:2.1;color:#333">
+        <div>💼 <strong>職業：</strong>農業コンサルタント</div>
+        <div>🏷 <strong>屋号：</strong>アグリ・スマイル</div>
+        <div>📋 <strong>届出の区分：</strong>開業　に○</div>
+        <div>💰 <strong>所得の種類：</strong>事業所得　に○</div>
+        <div>📅 <strong>開業日：</strong>令和8年5月31日</div>
+        <div>📝 <strong>事業の概要：</strong><br>
+          <span style="background:#F0FFF4;border-radius:6px;padding:4px 8px;display:inline-block;margin-top:4px;font-size:.75rem">
+          農業経営のデジタル化支援・農業経営コンサルティング・農作業技術指導・経理サポート
+          </span>
+        </div>
+        <div style="margin-top:6px">👥 <strong>給与支払い：</strong>なし（従業員なし）</div>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--orange)">
+      <div class="sec" style="color:var(--orange)">⭐ 青色申告承認申請書（同時提出）</div>
+      <div style="font-size:.78rem;line-height:2.1;color:#333">
+        <div>📅 <strong>提出日：</strong>令和8年5月31日（開業届と同じ日）</div>
+        <div>📅 <strong>青色申告を始める年：</strong>令和8年分から</div>
+        <div>📚 <strong>帳簿の種類：</strong>複式簿記　に○</div>
+        <div>💻 <strong>備付帳簿：</strong>現金出納帳・売掛帳・経費帳・固定資産台帳　に✓</div>
+        <div>🖥 <strong>e-Tax：</strong>電子申告する（65万円控除の条件）</div>
+      </div>
+      <div style="background:#FEF3E2;border-radius:8px;padding:8px;margin-top:8px;font-size:.72rem;color:#555">
+        ⚠️ この申請書を出さないと青色申告65万円控除が使えません！絶対に同時提出すること
+      </div>
+    </div>
+
+    <div class="card" style="border-left:4px solid #8E44AD">
+      <div class="sec" style="color:#8E44AD">🏦 楽天ビジネス口座について</div>
+      <div style="font-size:.78rem;line-height:1.9;color:#333">
+        <div>✅ 開業届提出後に<strong>屋号（アグリ・スマイル）名義</strong>で開設できる</div>
+        <div>✅ <strong>マネーフォワード確定申告と自動連携</strong>→ 記帳がほぼ自動化</div>
+        <div>✅ 農業委託料の受取口座として税務署にも説明しやすい</div>
+        <div style="margin-top:6px">📱 <strong>おすすめの流れ：</strong></div>
+        <div style="background:#F5F0FF;border-radius:6px;padding:6px 10px;margin-top:4px;font-size:.75rem">
+          5/31 開業届提出 → 6月に楽天ビジネス口座開設 → マネーフォワード連携 → 6月分から自動帳簿
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--green)">
+      <div class="sec">💻 タックスナップ vs マネーフォワード</div>
+      <div style="font-size:.78rem;line-height:1.9;color:#333">
+        <div style="color:var(--red)">❌ <strong>タックスナップ：不要</strong>（月980円 = 年11,760円の無駄）</div>
+        <div style="color:var(--green-d);margin-top:6px">✅ <strong>マネーフォワード確定申告：こちらで十分</strong></div>
+        <div style="padding-left:16px;font-size:.75rem;color:#555;line-height:1.8">
+          ・楽天口座と自動連携で記帳ゼロ<br>
+          ・e-Tax提出まで完結<br>
+          ・無料プランで青色申告書類を作成可能<br>
+          ・このアプリ（経費管理）と役割分担で完璧
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 業務委託 -->
+<div class="tab-content" id="tab-itaku">
+  <div class="container">
+
+    <!-- 警告バナー -->
+    <div style="background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;border-radius:12px;padding:14px 16px;margin-bottom:12px">
+      <div style="font-size:.85rem;font-weight:800;margin-bottom:6px">⚠️ 偽装フリーランスにならないための必須確認</div>
+      <div style="font-size:.72rem;opacity:.9;line-height:1.7">税務署・社会保険当局に「実態は雇用」と判断されると、農園側に追徴税・社会保険料が発生します</div>
+    </div>
+
+    <!-- チェックリスト -->
+    <div class="card">
+      <div class="sec">✅ 外注費と認められる条件チェック</div>
+      <div id="itakuCheck"></div>
+    </div>
+
+    <!-- 業務内容 -->
+    <div class="card">
+      <div class="sec">📋 まろさんの業務委託内容（最初の3年）</div>
+      <div style="font-size:.75rem;color:#555;line-height:1.9">
+        <div style="font-weight:700;color:var(--green-d);margin-bottom:6px">農業フリーランスとして担当する業務：</div>
+        <div>① <strong>農業デジタル化推進</strong>　気象・病害アプリ開発・経費管理ツール整備</div>
+        <div>② <strong>マーケティング・販売企画</strong>　シャインマスカット・ピオーネの販路開拓</div>
+        <div>③ <strong>経理・帳簿サポート</strong>　青色申告帳簿の整理・マネーフォワード管理</div>
+        <div>④ <strong>農作業技術指導</strong>　剪定・摘粒・病害対策の知識提供</div>
+        <div>⑤ <strong>各種申請書類サポート</strong>　補助金申請・農業委員会関連書類</div>
+      </div>
+      <div style="margin-top:10px;font-size:.7rem;color:var(--muted);background:#F5F5F5;border-radius:8px;padding:8px">
+        💡 <strong>重要：</strong>成果物（アプリ・資料・帳簿）を残しておくこと。作業日誌も◎
+      </div>
+    </div>
+
+    <!-- 業務委託契約の要点 -->
+    <div class="card" style="border-left:4px solid var(--blue)">
+      <div class="sec" style="color:var(--blue)">📄 業務委託契約書の必須記載事項</div>
+      <div style="font-size:.75rem;line-height:2;color:#444">
+        <div>✏️ <strong>委託者：</strong>（農園名・剛志さん名義）</div>
+        <div>✏️ <strong>受託者：</strong>まろさん（個人事業主）</div>
+        <div>✏️ <strong>業務内容：</strong>上記①〜⑤を具体的に記載</div>
+        <div>✏️ <strong>報酬：</strong>成果に対する月額固定 or 件数報酬</div>
+        <div>✏️ <strong>業務遂行の自由：</strong>時間・場所・方法は受託者が決める</div>
+        <div>✏️ <strong>契約期間：</strong>1年更新（自動更新条項あり）</div>
+        <div>✏️ <strong>解約条件：</strong>1〜2ヶ月前予告</div>
+      </div>
+      <button class="copy-btn" style="margin-top:8px" onclick="copyItakuContract()">📋 契約書ひな形をコピー</button>
+    </div>
+
+    <!-- NG行為 -->
+    <div class="warn-box">
+      ❌ <strong>これをやると「雇用」と判断される</strong><br>
+      毎日決まった時間に来るよう指示する／農園が仕事のやり方を細かく指示する／<br>
+      出勤簿・タイムカードで管理する／他の農園でも仕事できない状態にする
+    </div>
+
+    <!-- 5/31に向けてのToDo -->
+    <div class="card" style="border-left:4px solid var(--orange)">
+      <div class="sec" style="color:var(--orange)">📅 5月31日までにやること</div>
+      <div style="font-size:.75rem;line-height:2;color:#444">
+        <div>□ まろさんの<strong>開業届</strong>を税務署に提出</div>
+        <div>□ <strong>青色申告承認申請書</strong>を同時提出</div>
+        <div>□ 剛志さん（農園）との<strong>業務委託契約書</strong>を作成・署名</div>
+        <div>□ 剛志さんも<strong>青色申告</strong>の手続き（外注費を経費計上するため）</div>
+        <div>□ 開業費（車検・タイヤ・リベシティ旅費）の<strong>領収書を保管</strong></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 按分根拠文 -->
+<div class="tab-content" id="tab-konky">
+  <div class="container">
+
+    <div class="konky-box">
+      <div class="konky-title">🚗 ガソリン代（按分80%）の根拠</div>
+      <textarea class="konky-text" id="konky_gas" oninput="saveKonky()" rows="16">車両は主に農業用途（農地への移動・資材の運搬・農機具の搬送）に使用している。
+
+【1日の走行パターン】
+・自宅（湯梨浜町）から農地（北栄町）まで片道約6km
+・午前の作業のため自宅→農地（6km）
+・昼休憩のため農地→自宅（6km）、午後の作業のため自宅→農地（6km）
+・作業終了後、農地→自宅（6km）
+・1日2往復（計24km）すべて農業目的
+
+【シーズン別の作業・走行頻度】
+・農繁期（3月〜10月）：ほぼ毎日農作業（芽かき・摘粒・袋かけ・収穫等）のため毎日2往復走行
+　→ 月22日×24km＝528km/月
+・冬季（11月〜2月）：剪定・堆肥散布・草刈り・農機具整備・資材調達等の作業も多数あり、週3〜5日程度走行
+　→ 月15日×24km＝360km/月
+
+年間農業走行距離（概算）：528km×8ヶ月＋360km×4ヶ月＝約5,664km
+プライベート走行（週末の買い物等）：月約50km×12＝約600km/年
+農業用途の比率：5,664÷（5,664＋600）≒ 約90%
+
+余裕をもって按分率80%を適用する。
+年間を通じて農業目的の走行が主体であり、按分率80%は保守的かつ合理的な算定である。</textarea>
+      <div class="konky-saved" id="saved_konky_gas">✅ 保存しました</div>
+      <button class="copy-btn" onclick="copyText('konky_gas')">📋 コピー</button>
+    </div>
+
+    <div class="konky-box">
+      <div class="konky-title">📱 通信費（ネット＋携帯 按分75%）の根拠</div>
+      <textarea class="konky-text" id="konky_net" oninput="saveKonky()" rows="10">インターネット・携帯電話は農業事業の運営上不可欠なツールとして日常的に使用している。
+主な事業用途：
+・YouTubeにて葡萄（シャインマスカット・ピオーネ）栽培技術の動画視聴（毎日）
+・農業気象情報・病害情報のリアルタイム収集
+・農業経営の学習（オンラインセミナー・リベシティ参加）
+・AIツール(Claude)を使用した農業アプリ開発・経営管理
+・農業資材・種苗の調査・発注
+プライベート使用（SNS・家族連絡等）は全体の25%程度であり、事業用途が75%を占めると判断する。</textarea>
+      <div class="konky-saved" id="saved_konky_net">✅ 保存しました</div>
+      <button class="copy-btn" onclick="copyText('konky_net')">📋 コピー</button>
+    </div>
+
+    <div class="konky-box">
+      <div class="konky-title">▶️ YouTubeプレミアム（按分75%）の根拠</div>
+      <textarea class="konky-text" id="konky_yt" oninput="saveKonky()" rows="8">YouTubeプレミアムは、農業技術習得のための動画学習を広告なしで効率的に行うために加入している。
+主な視聴内容：
+・葡萄（シャインマスカット・ピオーネ）の栽培技術・剪定方法
+・病害（灰色かび病・べと病等）の予防・対処法
+・農業経営・6次産業化に関する学習コンテンツ
+農業関連動画の視聴が全視聴時間の75%以上を占めることから、按分率75%を適用する。</textarea>
+      <div class="konky-saved" id="saved_konky_yt">✅ 保存しました</div>
+      <button class="copy-btn" onclick="copyText('konky_yt')">📋 コピー</button>
+    </div>
+
+    <div class="konky-box">
+      <div class="konky-title">🏫 リベシティ会費（按分100%）の根拠</div>
+      <textarea class="konky-text" id="konky_rsk" oninput="saveKonky()" rows="6">リベシティは農業フリーランスとして事業を展開するにあたり、経営・税務・資産管理の知識習得を目的として加入したオンラインコミュニティである。
+農業経営の効率化・6次産業化・デジタル化を推進するための事業目的での加入であり、全額を研修費・情報収集費として計上する。
+5月31日には東京リベシティオフィスにて農業経営セミナーに参加予定（交通費・参加費も経費計上予定）。</textarea>
+      <div class="konky-saved" id="saved_konky_rsk">✅ 保存しました</div>
+      <button class="copy-btn" onclick="copyText('konky_rsk')">📋 コピー</button>
+    </div>
+
+    <div class="konky-box">
+      <div class="konky-title">🤖 Claude Code（按分90%）の根拠</div>
+      <textarea class="konky-text" id="konky_claude" oninput="saveKonky()" rows="8">Claude Code（AI開発ツール）は農業事業のデジタル化・効率化を目的として利用している。
+主な事業用途：
+・農業気象モニタリングアプリの開発・保守
+・雨雲レーダー・病害リスク・風情報の農業特化アプリ制作
+・農業経営の帳簿・経費管理ツールの開発
+・各種農業申請書類・事業計画書の作成支援
+プライベート使用は全体の10%程度であり、事業用途が90%を占めると判断する。</textarea>
+      <div class="konky-saved" id="saved_konky_claude">✅ 保存しました</div>
+      <button class="copy-btn" onclick="copyText('konky_claude')">📋 コピー</button>
+    </div>
+
+    <div class="konky-box">
+      <div class="konky-title">🚗 自動車保険・整備・修理・免許更新費（按分80%）の根拠</div>
+      <textarea class="konky-text" id="konky_car2" oninput="saveKonky()" rows="12">車両は農業事業に主として使用しているため、車両維持に関わる費用全般を農業使用割合（80%）で按分計上する。
+
+【対象費用と農業との関連】
+・自動車保険料：農地への移動・農業資材運搬に使用する車両の保険。農業使用80%に対応する保険料を按分計上。
+・車両整備・修理代：農業用途での走行（年間約5,664km）を主とする車両の維持費として按分計上。
+・免許更新費・交通安全協会費：農業事業において自家用車による農地移動が不可欠であり、運転免許の維持は事業遂行上必要な費用と認められる。農業使用割合80%で按分計上。
+
+農業目的の走行が年間総走行距離の約90%を占めることから、按分率80%は保守的かつ合理的な算定である。</textarea>
+      <div class="konky-saved" id="saved_konky_car2">✅ 保存しました</div>
+      <button class="copy-btn" onclick="copyText('konky_car2')">📋 コピー</button>
+    </div>
+
+    <div class="konky-box">
+      <div class="konky-title">🌾 農業用品費・水道代の根拠</div>
+      <textarea class="konky-text" id="konky_nougu" oninput="saveKonky()" rows="14">【農業用品費（長靴・ハサミ・雨具等）按分100%】
+農業作業専用として購入・使用している消耗品であり、プライベートでの使用はない。
+・長靴：農地での作業時のみ使用
+・農業用ハサミ（剪定鋏等）：葡萄の剪定・摘粒・収穫作業専用
+・雨具：農作業時の雨天対応専用
+これらは農業作業以外に使用しないため、全額（100%）を農業経費として計上する。
+
+【水道代 按分15%】
+水道は主に家庭用として使用しているが、以下の農業目的での使用がある。
+・農作業後の長靴・農業用具の洗浄
+・農作業着の洗濯（農薬・泥汚れ等）
+・農作業後の身体洗浄（農薬接触後）
+家庭使用との割合を勘案し、農業使用分として保守的に15%を按分計上する。</textarea>
+      <div class="konky-saved" id="saved_konky_nougu">✅ 保存しました</div>
+      <button class="copy-btn" onclick="copyText('konky_nougu')">📋 コピー</button>
+    </div>
+
+    <div class="warn-box">
+      💡 これらの説明文は税務調査の際の参考資料として保存しておいてください。<br>
+      実際の使用記録（閲覧履歴・走行距離記録等）も合わせて保管すると安心です。
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ---- 初期データ（月次経費）----
+const DEFAULT_ITEMS=[
+  {id:1, cat:'🚗 車両費',name:'ガソリン代',         month:10000,ratio:80},
+  {id:6, cat:'🚗 車両費',name:'自動車保険代',        month:6000, ratio:80},
+  {id:7, cat:'🚗 車両費',name:'車両整備・修理代',    month:2000, ratio:80},
+  {id:8, cat:'🚗 車両費',name:'免許更新・交通安全協会',month:200, ratio:80},
+  {id:2, cat:'📱 通信費',name:'ネット＋携帯',        month:6000, ratio:75},
+  {id:3, cat:'📺 学習費',name:'YouTubeプレミアム',   month:2240, ratio:75},
+  {id:4, cat:'🏫 研修費',name:'リベシティ応援会費',  month:10000,ratio:100},
+  {id:5, cat:'🤖 AI・ツール',name:'Claude Code',     month:3300, ratio:90},
+  {id:9, cat:'🌾 農業用具',name:'農業用品費（長靴・ハサミ・雨具等）',month:1500,ratio:100},
+  {id:10,cat:'💧 光熱費',name:'水道・光熱費（農業按分）',month:15000,ratio:15},
+];
+
+// ---- 初期データ（開業費）----
+const DEFAULT_KAIGYOHI=[
+  {id:1,name:'車検代',amount:0,memo:'2026年3月／農業用車両の整備（開業前）'},
+  {id:2,name:'タイヤ交換',amount:0,memo:'2026年3月／農業用車両の整備（開業前）'},
+  {id:3,name:'5月研修 交通費',amount:0,memo:'2026年5月31日 リベシティ東京研修／往復交通費'},
+  {id:4,name:'5月研修 宿泊代',amount:0,memo:'2026年5月31日 リベシティ東京研修／ホテル代'},
+];
+
+let items=[];
+let nextId=10;
+let kaigyohi=[];
+let nextKId=10;
+
+function load(){
+  const saved=localStorage.getItem('nogyou_kehi');
+  if(saved){
+    const d=JSON.parse(saved);
+    items=d.items||DEFAULT_ITEMS;
+    nextId=d.nextId||20;
+  }else{
+    items=[...DEFAULT_ITEMS];
+  }
+  const ksaved=localStorage.getItem('nogyou_kaigyohi');
+  if(ksaved){
+    const d=JSON.parse(ksaved);
+    kaigyohi=d.items||DEFAULT_KAIGYOHI;
+    nextKId=d.nextId||20;
+  }else{
+    kaigyohi=DEFAULT_KAIGYOHI.map(i=>({...i}));
+  }
+}
+function save(){
+  localStorage.setItem('nogyou_kehi',JSON.stringify({items,nextId}));
+}
+function saveKaigyohi(){
+  localStorage.setItem('nogyou_kaigyohi',JSON.stringify({items:kaigyohi,nextId:nextKId}));
+}
+
+function fmt(n){return Math.round(n).toLocaleString('ja-JP')+'円'}
+
+function renderList(){
+  const el=document.getElementById('kehiList');
+  el.innerHTML=items.map(item=>{
+    const monthly=Math.round(item.month*item.ratio/100);
+    return `<div class="kehi-item" id="ki_${item.id}">
+      <div class="kehi-top">
+        <div>
+          <div style="font-size:.63rem;color:var(--muted);margin-bottom:1px">${item.cat}</div>
+          <div class="kehi-name">${item.name}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="kehi-badge">${item.ratio}%</span>
+          <button class="kehi-del" onclick="delItem(${item.id})">削除</button>
+        </div>
+      </div>
+      <div class="kehi-row">
+        <span class="kehi-label">月額（円）</span>
+        <input class="kehi-input" type="number" value="${item.month}" oninput="updateItem(${item.id},'month',+this.value)">
+      </div>
+      <div class="kehi-row">
+        <span class="kehi-label">按分率（%）</span>
+        <input class="kehi-input" type="number" min="0" max="100" value="${item.ratio}" oninput="updateItem(${item.id},'ratio',+this.value)">
+      </div>
+      <div class="kehi-result">→ 月の経費: ${fmt(monthly)}</div>
+    </div>`;
+  }).join('');
+  updateTotal();
+}
+
+function updateItem(id,field,val){
+  const item=items.find(i=>i.id===id);
+  if(item) item[field]=val;
+  save();
+  updateTotal();
+  // update result line
+  const monthly=Math.round(item.month*item.ratio/100);
+  const el=document.querySelector(`#ki_${id} .kehi-result`);
+  if(el) el.textContent='→ 月の経費: '+fmt(monthly);
+  // update badge
+  const badge=document.querySelector(`#ki_${id} .kehi-badge`);
+  if(badge) badge.textContent=item.ratio+'%';
+  calcSim();
+}
+
+function updateTotal(){
+  const monthly=items.reduce((s,i)=>s+Math.round(i.month*i.ratio/100),0);
+  document.getElementById('totalMonth').textContent=fmt(monthly);
+  document.getElementById('totalYear').textContent=fmt(monthly*12);
+  const si=document.getElementById('s_kehi');
+  if(si) si.value=monthly*12;
+  updateKaigyohiTotal();
+}
+
+// ---- 開業費 ----
+function renderKaigyohi(){
+  const el=document.getElementById('kaigyohiList');
+  if(!el) return;
+  el.innerHTML=kaigyohi.map(k=>`
+    <div class="kaigyohi-item" id="kk_${k.id}">
+      <div class="kehi-top">
+        <div>
+          <div style="font-size:.63rem;color:var(--muted);margin-bottom:1px">📁 開業費（任意償却）</div>
+          <div class="kehi-name">${k.name}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="kaigyohi-badge">開業費</span>
+          <button class="kehi-del" onclick="delKaigyohi(${k.id})">削除</button>
+        </div>
+      </div>
+      <div class="kehi-row">
+        <span class="kehi-label">金額（円）</span>
+        <input class="kehi-input" type="number" value="${k.amount}" oninput="updateKaigyohi(${k.id},'amount',+this.value)">
+      </div>
+      <input class="kaigyohi-memo" type="text" placeholder="メモ（日付・内容など）" value="${k.memo||''}" oninput="updateKaigyohi(${k.id},'memo',this.value)">
+      <div class="kehi-result" style="color:var(--orange)">→ 開業費: ${fmt(k.amount)}</div>
+    </div>`).join('');
+  updateKaigyohiTotal();
+}
+
+function updateKaigyohi(id,field,val){
+  const k=kaigyohi.find(i=>i.id===id);
+  if(k) k[field]=val;
+  saveKaigyohi();
+  updateKaigyohiTotal();
+  if(field==='amount'){
+    const el=document.querySelector(`#kk_${id} .kehi-result`);
+    if(el) el.textContent='→ 開業費: '+fmt(val);
+  }
+}
+
+function updateKaigyohiTotal(){
+  const total=kaigyohi.reduce((s,k)=>s+k.amount,0);
+  const el=document.getElementById('kaigyohiTotal');
+  if(el) el.textContent=fmt(total);
+  const sel=document.getElementById('sim_kaigyohi_total');
+  if(sel) sel.textContent=fmt(total);
+}
+
+function addKaigyohi(){
+  const name=prompt('開業費の名称（例：車検代、研修費）')||'新規開業費';
+  const amount=+(prompt('金額（円）')||0);
+  const memo=prompt('メモ（日付・内容など）')||'';
+  kaigyohi.push({id:nextKId++,name,amount,memo});
+  saveKaigyohi();
+  renderKaigyohi();
+}
+
+function delKaigyohi(id){
+  if(!confirm('削除しますか？')) return;
+  kaigyohi=kaigyohi.filter(k=>k.id!==id);
+  saveKaigyohi();
+  renderKaigyohi();
+}
+
+function addItem(){
+  const cat=prompt('カテゴリ（例：農業資材、交通費）') ||'その他';
+  const name=prompt('経費名（例：農薬代）') ||'新規経費';
+  const month=+(prompt('月額（円）')||0);
+  const ratio=+(prompt('按分率（%）')||100);
+  items.push({id:nextId++,cat,name,month,ratio});
+  save();
+  renderList();
+  calcSim();
+}
+
+function delItem(id){
+  if(!confirm('削除しますか？')) return;
+  items=items.filter(i=>i.id!==id);
+  save();
+  renderList();
+  calcSim();
+}
+
+// ---- 確定申告シミュレーター ----
+function calcSim(){
+  const nogyou=+(document.getElementById('s_nogyou').value)||0;
+  const part=+(document.getElementById('s_part').value)||0;
+  const aoiro=+(document.getElementById('s_aoiro').value)||0;
+  const kiso=+(document.getElementById('s_kiso').value)||0;
+  const shakai=+(document.getElementById('s_shakai').value)||0;
+  const kehi=items.reduce((s,i)=>s+Math.round(i.month*i.ratio/100),0)*12;
+
+  const siEl=document.getElementById('s_kehi');
+  if(siEl) siEl.value=kehi;
+
+  // 給与所得控除（簡易計算）
+  let kyuyo_kojo=0;
+  if(part<=1625000) kyuyo_kojo=550000;
+  else if(part<=1800000) kyuyo_kojo=part*0.4-100000;
+  else if(part<=3600000) kyuyo_kojo=part*0.3+80000;
+  else kyuyo_kojo=part*0.2+440000;
+
+  const kyuyo_shotoku=Math.max(0,part-kyuyo_kojo);
+  const jigyo_shotoku=Math.max(0,nogyou-kehi-aoiro);
+  const total_shotoku=kyuyo_shotoku+jigyo_shotoku;
+  const total_kojo=kiso+shakai;
+  const kazei_shotoku=Math.max(0,total_shotoku-total_kojo);
+
+  // 所得税（累進）
+  let shotoku_zei=0;
+  if(kazei_shotoku<=1950000) shotoku_zei=kazei_shotoku*0.05;
+  else if(kazei_shotoku<=3300000) shotoku_zei=kazei_shotoku*0.10-97500;
+  else if(kazei_shotoku<=6950000) shotoku_zei=kazei_shotoku*0.20-427500;
+  else shotoku_zei=kazei_shotoku*0.23-636000;
+  shotoku_zei=Math.max(0,shotoku_zei);
+  const fukko=shotoku_zei*0.021; // 復興特別所得税
+
+  // 住民税（概算）
+  const jumin_zei=Math.max(0,kazei_shotoku*0.10+5000);
+
+  const zei_total=shotoku_zei+fukko+jumin_zei;
+  const aoiro_effect=aoiro*0.05; // 青色控除の節税効果概算
+
+  document.getElementById('simResult').innerHTML=`
+    <div class="result-box income">
+      <div class="rb-title">💰 収入・所得の計算</div>
+      <div class="rb-row"><span>パート給与</span><span class="rb-val">${fmt(part)}</span></div>
+      <div class="rb-row"><span>農業委託料</span><span class="rb-val">${fmt(nogyou)}</span></div>
+      <div class="rb-row"><span>－給与所得控除</span><span class="rb-val" style="color:var(--orange)">△${fmt(kyuyo_kojo)}</span></div>
+      <div class="rb-row"><span>－農業経費（按分後）</span><span class="rb-val" style="color:var(--orange)">△${fmt(kehi)}</span></div>
+      <div class="rb-row"><span>－青色申告特別控除</span><span class="rb-val" style="color:var(--orange)">△${fmt(aoiro)}</span></div>
+      <div class="rb-total">合計所得 <strong>${fmt(total_shotoku)}</strong></div>
+    </div>
+    <div class="result-box deduct">
+      <div class="rb-title">📉 控除の合計</div>
+      <div class="rb-row"><span>基礎控除</span><span class="rb-val">${fmt(kiso)}</span></div>
+      <div class="rb-row"><span>社会保険料控除</span><span class="rb-val">${fmt(shakai)}</span></div>
+      <div class="rb-total">課税所得 <strong>${fmt(kazei_shotoku)}</strong></div>
+    </div>
+    <div class="result-box tax">
+      <div class="rb-title">🧾 税額（概算）</div>
+      <div class="rb-row"><span>所得税</span><span class="rb-val">${fmt(shotoku_zei)}</span></div>
+      <div class="rb-row"><span>復興特別所得税（2.1%）</span><span class="rb-val">${fmt(fukko)}</span></div>
+      <div class="rb-row"><span>住民税（概算）</span><span class="rb-val">${fmt(jumin_zei)}</span></div>
+      <div class="rb-total">税合計 <strong style="color:var(--red)">${fmt(zei_total)}</strong></div>
+    </div>
+    <div class="result-box save">
+      <div class="rb-title">✨ 青色申告の節税効果</div>
+      <div class="rb-row"><span>青色65万円控除による節税</span><span class="rb-val" style="color:var(--blue)">約${fmt(aoiro_effect)}〜${fmt(aoiro*0.15)}</span></div>
+      <div class="rb-row" style="font-size:.7rem;color:var(--muted)"><span colspan="2">※実際の節税額は合計所得・税率によって変わります</span></div>
+    </div>
+  `;
+}
+
+// ---- 按分根拠文 保存・読み込み ----
+const KONKY_IDS=['konky_gas','konky_net','konky_yt','konky_rsk','konky_claude','konky_car2','konky_nougu'];
+
+function saveKonky(){
+  const data={};
+  KONKY_IDS.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) data[id]=el.value;
+  });
+  localStorage.setItem('nogyou_konky',JSON.stringify(data));
+  // 「保存しました」を一瞬表示
+  KONKY_IDS.forEach(id=>{
+    const si=document.getElementById('saved_'+id);
+    if(si){si.style.display='block';setTimeout(()=>{si.style.display='none';},1500);}
+  });
+}
+
+function loadKonky(){
+  const saved=localStorage.getItem('nogyou_konky');
+  if(!saved) return;
+  const data=JSON.parse(saved);
+  KONKY_IDS.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && data[id]!==undefined) el.value=data[id];
+  });
+}
+
+// ---- コピー ----
+function copyText(id){
+  const el=document.getElementById(id);
+  const text=el.tagName==='TEXTAREA'?el.value:el.textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    alert('コピーしました！');
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('コピーしました！');
+  });
+}
+
+// ---- 開業準備スケジュール ----
+const SCHEDULE=[
+  {
+    period:'4月中（今すぐ）', color:'#E74C3C', emoji:'🔴',
+    tasks:[
+      {done:false, who:'まろ', text:'車検代・タイヤ交換の領収書を確認・保管（開業費に計上）'},
+      {done:false, who:'まろ', text:'開業届の書式を入手（国税庁サイト or 倉吉税務署）'},
+      {done:false, who:'まろ', text:'青色申告承認申請書の書式を入手（同上）'},
+      {done:false, who:'まろ', text:'マネーフォワード確定申告の無料アカウント作成'},
+      {done:false, who:'剛志', text:'剛志の開業届・青色申告承認申請書の書式も入手'},
+    ]
+  },
+  {
+    period:'4月末まで', color:'#E67E22', emoji:'🟠',
+    tasks:[
+      {done:false, who:'まろ', text:'開業届に記入（氏名・住所・職業：農業コンサルタント・開業日：5/31）'},
+      {done:false, who:'まろ', text:'青色申告承認申請書に記入（帳簿方式：複式簿記）'},
+      {done:false, who:'まろ', text:'業務委託契約書のひな形をアプリからコピーして準備'},
+      {done:false, who:'剛志', text:'剛志も開業届・青色申告承認申請書に記入'},
+      {done:false, who:'まろ', text:'5/31 東京リベシティ研修の交通費・宿泊の領収書確認'},
+    ]
+  },
+  {
+    period:'5月31日（開業日）⭐', color:'#27AE60', emoji:'⭐',
+    tasks:[
+      {done:false, who:'まろ', text:'リベシティ東京研修に参加（交通費・宿泊代→開業費に計上）'},
+      {done:false, who:'まろ剛志', text:'倉吉税務署に開業届を提出（まろさん・剛志 2人分）'},
+      {done:false, who:'まろ剛志', text:'青色申告承認申請書を同時提出（2人分）'},
+      {done:false, who:'まろ剛志', text:'業務委託契約書に署名・捺印（まろさん↔剛志）'},
+      {done:false, who:'まろ', text:'領収書を整理（開業費：車検・タイヤ・旅費・ホテル）'},
+    ]
+  },
+  {
+    period:'6月〜（開業後）', color:'#2980B9', emoji:'🔵',
+    tasks:[
+      {done:false, who:'まろ', text:'マネーフォワードで6月分から帳簿記入スタート'},
+      {done:false, who:'まろ', text:'このアプリで毎月の経費を確認・更新'},
+      {done:false, who:'まろ', text:'農作業日誌をつけ始める（業務委託の成果物として）'},
+      {done:false, who:'剛志', text:'剛志が毎月まろさんへの外注費を帳簿に計上'},
+      {done:false, who:'まろ', text:'毎月の確定申告シミュレーションで節税状況を確認'},
+    ]
+  },
+  {
+    period:'2027年1〜3月（確定申告）', color:'#8E44AD', emoji:'🟣',
+    tasks:[
+      {done:false, who:'まろ', text:'2026年分の農業収入・経費を集計'},
+      {done:false, who:'まろ', text:'マネーフォワードで青色申告書類を作成'},
+      {done:false, who:'まろ', text:'e-Taxで確定申告（2/16〜3/15）→ 65万円控除確定'},
+      {done:false, who:'剛志', text:'剛志も青色申告（外注費を計上して節税）'},
+      {done:false, who:'まろ', text:'国保料の軽減申請を確認（7割軽減が継続するか）'},
+    ]
+  },
+];
+
+function renderSchedule(){
+  const el=document.getElementById('scheduleList');
+  if(!el) return;
+  const saved=JSON.parse(localStorage.getItem('schedule_done')||'{}');
+  el.innerHTML=SCHEDULE.map((block,bi)=>`
+    <div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:1.1rem">${block.emoji}</span>
+        <div style="background:${block.color};color:#fff;border-radius:20px;padding:4px 14px;font-size:.8rem;font-weight:800">${block.period}</div>
+      </div>
+      <div style="border-left:3px solid ${block.color};padding-left:12px">
+        ${block.tasks.map((t,ti)=>{
+          const key=`${bi}_${ti}`;
+          const done=saved[key]||false;
+          return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 6px;border-radius:8px;margin-bottom:4px;background:${done?'#F0FFF4':'#fff'};box-shadow:0 1px 4px rgba(0,0,0,.07)">
+            <input type="checkbox" ${done?'checked':''} onchange="toggleSchedule('${key}',this.checked)" style="margin-top:2px;flex-shrink:0;width:16px;height:16px;accent-color:var(--green)">
+            <div style="flex:1">
+              <span style="font-size:.65rem;background:${t.who.includes('剛志')&&t.who.includes('まろ')?'#8E44AD':t.who==='剛志'?'#E67E22':'var(--green)'};color:#fff;border-radius:6px;padding:1px 6px;margin-right:5px">${t.who}</span>
+              <span style="font-size:.78rem;color:${done?'#999':'#333'};${done?'text-decoration:line-through':''}">${t.text}</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function toggleSchedule(key,val){
+  const saved=JSON.parse(localStorage.getItem('schedule_done')||'{}');
+  saved[key]=val;
+  localStorage.setItem('schedule_done',JSON.stringify(saved));
+  renderSchedule();
+}
+
+// ---- 業務委託チェックリスト ----
+const ITAKU_CHECKS=[
+  {ok:true,  text:'業務委託契約書を書面で作成している'},
+  {ok:true,  text:'まろさんが仕事の方法・時間・場所を自分で決められる'},
+  {ok:true,  text:'成果物（アプリ・資料・帳簿）で報酬を支払う形にしている'},
+  {ok:true,  text:'他の農園・他社の仕事も受けられる状態にしている'},
+  {ok:false, text:'毎日決まった時間に来るよう農園が指示している　→ NG（雇用と判断される）'},
+  {ok:false, text:'農園が細かく作業方法を指揮・命令している　→ NG'},
+  {ok:false, text:'タイムカード・出勤簿で管理している　→ NG'},
+];
+function renderItakuCheck(){
+  const el=document.getElementById('itakuCheck');
+  if(!el) return;
+  el.innerHTML=ITAKU_CHECKS.map(c=>`
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #F0F0F0;font-size:.78rem">
+      <span style="font-size:1rem;flex-shrink:0">${c.ok?'✅':'❌'}</span>
+      <span style="color:${c.ok?'#27AE60':'#E74C3C'};font-weight:${c.ok?'400':'600'}">${c.text}</span>
+    </div>`).join('');
+}
+
+function copyItakuContract(){
+  const text=`【業務委託契約書】
+
+委託者（農園）：○○農園　代表 田中剛志
+受託者（フリーランス）：田中まろ（個人事業主）
+
+■ 業務内容
+① 農業デジタル化推進（気象アプリ・経費管理ツールの開発・保守）
+② マーケティング・販売企画（葡萄の販路開拓・SNS活用）
+③ 経理・帳簿サポート（青色申告帳簿整理・マネーフォワード管理）
+④ 農作業技術指導（剪定・摘粒・病害対策）
+⑤ 各種申請書類サポート（補助金申請・農業委員会書類）
+
+■ 報酬：月額 ○○円（成果物の提出を条件とする）
+■ 契約期間：2026年6月1日〜2027年5月31日（1年更新）
+■ 業務遂行：受託者が自らの判断で時間・場所・方法を決定する
+■ 解約：1ヶ月前の書面通知による
+
+上記のとおり業務委託契約を締結する。
+20　　年　　月　　日
+
+委託者　署名：＿＿＿＿＿＿＿＿
+受託者　署名：＿＿＿＿＿＿＿＿`;
+  navigator.clipboard.writeText(text).then(()=>alert('契約書ひな形をコピーしました！\nメモ帳などに貼り付けて使ってください。')).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    alert('コピーしました！');
+  });
+}
+
+// ---- タブ ----
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ---- 起動 ----
+load();
+renderList();
+renderKaigyohi();
+calcSim();
+loadKonky();
+renderSchedule();
+renderItakuCheck();
+</script>
+</body>
+</html>
