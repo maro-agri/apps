@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Claude Code 活用ガイド ― 北栄農園デジタル化</title>
+  <style>
+    :root{
+      --green:#27AE60;--green-d:#1E8449;--blue:#2980B9;
+      --orange:#E67E22;--brown:#7D5A2F;--purple:#8E44AD;
+      --bg:#FAFFFE;--card:#fff;--text:#2C2C2C;--muted:#7F8C8D;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,'Hiragino Sans','Yu Gothic',sans-serif;
+      background:var(--bg);color:var(--text);font-size:14px;line-height:1.8}
+
+    /* 印刷ボタン */
+    .print-bar{background:linear-gradient(135deg,#1a5276,var(--blue));
+      color:#fff;padding:12px 20px;display:flex;align-items:center;
+      justify-content:space-between;position:sticky;top:0;z-index:100}
+    .print-bar h2{font-size:.95rem;font-weight:800}
+    .print-btn{background:#fff;color:var(--blue);border:none;border-radius:8px;
+      padding:8px 18px;font-size:.85rem;font-weight:800;cursor:pointer}
+    .print-btn:hover{background:#EBF5FB}
+
+    .wrap{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+
+    /* ヘッダー */
+    .hero{background:linear-gradient(135deg,#1a3a1a,var(--green-d),var(--green));
+      color:#fff;border-radius:16px;padding:28px 24px;margin-bottom:24px;text-align:center}
+    .hero h1{font-size:1.4rem;font-weight:900;margin-bottom:6px}
+    .hero .sub{font-size:.82rem;opacity:.9}
+
+    /* セクション */
+    h2.sec-title{font-size:1rem;font-weight:800;padding:8px 14px;
+      border-radius:8px;margin:24px 0 12px;color:#fff}
+    .sec-green{background:var(--green-d)}
+    .sec-blue{background:#1a5276}
+    .sec-orange{background:#a04000}
+    .sec-brown{background:var(--brown)}
+    .sec-purple{background:var(--purple)}
+
+    /* カード */
+    .card{background:var(--card);border-radius:12px;
+      box-shadow:0 2px 10px rgba(0,0,0,.08);padding:16px;margin-bottom:12px}
+    .card-title{font-size:.9rem;font-weight:800;margin-bottom:8px;
+      display:flex;align-items:center;gap:6px}
+    .badge{display:inline-block;padding:2px 10px;border-radius:12px;
+      font-size:.7rem;font-weight:800;color:#fff;margin-left:6px}
+    .bg-green{background:var(--green)}
+    .bg-blue{background:var(--blue)}
+    .bg-orange{background:var(--orange)}
+    .bg-red{background:#E74C3C}
+
+    /* 比較ボックス */
+    .compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+    .box{border-radius:10px;padding:14px}
+    .box-blue{background:#EBF5FB;border:2px solid #AED6F1}
+    .box-green{background:#E8F8EF;border:2px solid #A9DFBF}
+    .box-title{font-size:.82rem;font-weight:800;margin-bottom:8px}
+    .ok{color:var(--green);font-weight:700}
+    .ng{color:#E74C3C;font-weight:700}
+
+    /* 例題カード */
+    .example-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+    .ex-card{background:var(--card);border-radius:10px;padding:13px;
+      border-left:4px solid var(--green);box-shadow:0 1px 6px rgba(0,0,0,.07)}
+    .ex-num{font-size:.65rem;font-weight:800;color:var(--muted);margin-bottom:4px}
+    .ex-title{font-size:.85rem;font-weight:800;margin-bottom:6px}
+    .ex-body{font-size:.78rem;color:#444;line-height:1.7;
+      background:#F8F9FA;border-radius:6px;padding:7px 9px}
+    .ex-result{font-size:.72rem;color:var(--green-d);font-weight:700;
+      margin-top:6px}
+
+    /* 全体MAP */
+    .map{background:#0d1117;border-radius:12px;padding:18px;color:#c9d1d9;
+      font-family:'Courier New',monospace;font-size:.78rem;line-height:2;overflow-x:auto}
+    .map .g{color:#56d364}
+    .map .b{color:#58a6ff}
+    .map .o{color:#f9a825}
+    .map .y{color:#ffd700}
+
+    /* 料金表 */
+    table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden}
+    th{background:var(--green-d);color:#fff;padding:10px 14px;
+      font-size:.8rem;text-align:left}
+    td{padding:9px 14px;font-size:.82rem;border-bottom:1px solid #F0F0F0}
+    tr:last-child td{border-bottom:none}
+    tr:nth-child(even) td{background:#F8FFF8}
+    .price-free{color:var(--green);font-weight:800}
+    .price-paid{color:var(--orange);font-weight:800}
+
+    /* ポイント */
+    .point-box{background:linear-gradient(135deg,#FEF3E2,#FFFDF5);
+      border:2px solid #FAD7A0;border-radius:12px;padding:16px;margin-bottom:12px}
+    .point-box p{font-size:.85rem;margin-bottom:8px;padding-left:10px;
+      border-left:3px solid var(--orange)}
+    .point-box p:last-child{margin-bottom:0}
+
+    /* まとめ */
+    .summary{background:linear-gradient(135deg,#1a3a1a,var(--green-d));
+      color:#fff;border-radius:12px;padding:20px;text-align:center}
+    .summary p{font-size:.88rem;line-height:2;opacity:.95}
+    .summary strong{font-size:1rem;display:block;margin-bottom:8px}
+
+    /* 印刷用スタイル */
+    @media print{
+      .print-bar{display:none}
+      body{background:#fff;font-size:11px}
+      .wrap{padding:0;max-width:100%}
+      .map{background:#1a1a1a;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .hero,.summary,.sec-title{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .card{box-shadow:none;border:1px solid #ddd}
+      .compare{grid-template-columns:1fr 1fr}
+      .example-grid{grid-template-columns:repeat(3,1fr)}
+      h2.sec-title{page-break-before:auto}
+      .ex-card{page-break-inside:avoid}
+    }
+    @media(max-width:600px){
+      .compare{grid-template-columns:1fr}
+      .example-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<!-- 印刷バー -->
+<div class="print-bar">
+  <h2>🌿 Claude Code 活用ガイド ― 北栄農園デジタル化</h2>
+  <button class="print-btn" onclick="window.print()">🖨️ 印刷・PDF保存</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ヒーロー -->
+  <div class="hero">
+    <h1>🌿 Claude Code で農業デジタル化</h1>
+    <div class="sub">まろさん・剛志さんのための完全ガイド<br>
+    Claude Code × GitHub × Supabase ― 北栄農園の産業革命</div>
+  </div>
+
+  <!-- 1. AIの違い -->
+  <h2 class="sec-title sec-blue">1️⃣ ふつうのClaude AI と Claude Code の違い</h2>
+
+  <div class="compare">
+    <div class="box box-blue">
+      <div class="box-title">🔵 ふつうのClaude AI（ブラウザ）</div>
+      <div style="font-size:.8rem;margin-bottom:8px;color:#555">
+        「先生」のような存在。アドバイスはしてくれるが、実際には何もやってくれない。
+      </div>
+      <div class="ok">✅ 質問に答える</div><br>
+      <div class="ok">✅ 文章を書く</div><br>
+      <div class="ok">✅ コードを「提案」する</div><br>
+      <div class="ng">❌ ファイルを保存する</div><br>
+      <div class="ng">❌ ブラウザを操作する</div><br>
+      <div class="ng">❌ GitHubにアップする</div>
+    </div>
+    <div class="box box-green">
+      <div class="box-title">🟢 Claude Code（デスクトップアプリ）</div>
+      <div style="font-size:.8rem;margin-bottom:8px;color:#555">
+        「職人」のような存在。言葉で頼むと実際に手を動かして作業してくれる。
+      </div>
+      <div class="ok">✅ HTMLファイルを直接修正・保存</div><br>
+      <div class="ok">✅ GitHubにアップロード</div><br>
+      <div class="ok">✅ Supabaseの設定をする</div><br>
+      <div class="ok">✅ Chromeを自動操作</div><br>
+      <div class="ok">✅ プログラムを実行する</div><br>
+      <div class="ok">✅ 複数サービスを連携</div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--orange);background:#FFFDF5">
+    <div style="font-size:.9rem;text-align:center;font-weight:800;color:var(--orange)">
+      💡 一言で言うと
+    </div>
+    <div style="font-size:1rem;text-align:center;margin-top:8px;font-weight:700">
+      「Claude AIは口だけ、Claude Codeは手も動く」
+    </div>
+  </div>
+
+  <!-- 2. Claude-in-Chrome -->
+  <h2 class="sec-title sec-blue">2️⃣ Claude-in-Chrome（Chrome拡張機能）の役割</h2>
+
+  <div class="card">
+    <div class="card-title">🟡 Chrome拡張機能とは？</div>
+    <div style="font-size:.83rem;margin-bottom:10px">
+      Claude CodeがChromeブラウザを「手として使うための橋」です。<br>
+      これがあることで、Claude CodeがChromeを自動操作できます。
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
+      <div style="background:#FFFDE7;border-radius:8px;padding:10px;font-size:.78rem;text-align:center">
+        🌐<br>ページを開く・閉じる
+      </div>
+      <div style="background:#FFFDE7;border-radius:8px;padding:10px;font-size:.78rem;text-align:center">
+        👆<br>ボタンをクリック
+      </div>
+      <div style="background:#FFFDE7;border-radius:8px;padding:10px;font-size:.78rem;text-align:center">
+        ⌨️<br>文字を自動入力
+      </div>
+      <div style="background:#FFFDE7;border-radius:8px;padding:10px;font-size:.78rem;text-align:center">
+        👀<br>画面の内容を読む
+      </div>
+      <div style="background:#FFFDE7;border-radius:8px;padding:10px;font-size:.78rem;text-align:center">
+        📊<br>データを取得する
+      </div>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-top:10px;text-align:center">
+      → Supabaseのセットアップやデータ確認に活躍しました！
+    </div>
+  </div>
+
+  <!-- 3. できること10選 -->
+  <h2 class="sec-title sec-green">3️⃣ Claude Code でできること 10の例</h2>
+
+  <div class="example-grid">
+    <div class="ex-card">
+      <div class="ex-num">例題 01</div>
+      <div class="ex-title">📁 ファイルの自動整理</div>
+      <div class="ex-body">「デスクトップの写真を2024・2025・2026年のフォルダに分けて」</div>
+      <div class="ex-result">→ 自動で分類・移動完了！</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">例題 02</div>
+      <div class="ex-title">📊 グラフ付き集計表を作る</div>
+      <div class="ex-body">「農業の売上データをもとに月別グラフ付きHTMLページを作って」</div>
+      <div class="ex-result">→ 農業経費管理アプリが完成！</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">例題 03</div>
+      <div class="ex-title">📱 スマホアプリを作る</div>
+      <div class="ex-body">「天気と作業内容を記録できるiPhoneで使えるアプリを作って」</div>
+      <div class="ex-result">→ App Store不要の作業日誌完成！</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">例題 04</div>
+      <div class="ex-title">🌐 ウェブサイトを作って公開</div>
+      <div class="ex-body">「北栄農園の紹介ページを作ってインターネットで見られるようにして」</div>
+      <div class="ex-result">→ GitHub Pagesに無料公開！</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">例題 05</div>
+      <div class="ex-title">🔄 MacとiPhoneでデータ共有</div>
+      <div class="ex-body">「畑で入力したデータを家のMacでも見られるようにして」</div>
+      <div class="ex-result">→ Supabaseで自動同期！今回やったこと</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">例題 06</div>
+      <div class="ex-title">🖥️ 毎日の天気を自動取得</div>
+      <div class="ex-body">「毎日気象庁のサイトを開いて北栄町の天気を取ってきて」</div>
+      <div class="ex-result">→ Chrome自動化でデータ収集！</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">例題 07</div>
+      <div class="ex-title">📝 確定申告の書類を作る</div>
+      <div class="ex-body">「マネーフォワードのデータから確定申告用のまとめ表を作って」</div>
+      <div class="ex-result">→ データ読込・自動集計・整形！</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">例題 08</div>
+      <div class="ex-title">🔧 アプリに機能を追加する</div>
+      <div class="ex-body">「担当者に『剛志・おばあちゃん・母・父・ここちゃん』を追加して」</div>
+      <div class="ex-result">→ ファイルを直接修正・保存！</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">例題 09</div>
+      <div class="ex-title">📸 画面を見て判断する</div>
+      <div class="ex-body">スクリーンショットを見せると「ここをタップしてください」と教えてくれる</div>
+      <div class="ex-result">→ 画面を見て操作を案内！</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">例題 10</div>
+      <div class="ex-title">🤖 複数サービスを同時連携</div>
+      <div class="ex-body">「GitHubに保存して、Supabaseと連携して、iPhoneで使えるようにして」</div>
+      <div class="ex-result">→ まるごと全部やってくれる！</div>
+    </div>
+  </div>
+
+  <!-- 4. 全体MAP -->
+  <h2 class="sec-title sec-brown">4️⃣ 北栄農園 デジタル化 全体MAP</h2>
+
+  <div class="map">
+<span class="y">╔══════════════════════════════════════════════════════════╗</span>
+<span class="y">║      🌿 北栄農園 デジタル化プロジェクト 全体MAP             ║</span>
+<span class="y">╚══════════════════════════════════════════════════════════╝</span>
+
+<span class="b">【作る人】</span>
+  まろさん（アイデア・要望）
+       ＋
+  <span class="g">Claude Code</span>（実際に作る・GitHub・Supabase設定）
+       ↓
+
+<span class="b">【作ったもの】3つのHTMLアプリ</span>
+  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+  │ 📋 農業経費  │  │ 📝 作業日誌  │  │ 🌤 北栄天気  │
+  │   管理アプリ │  │   アプリ     │  │   アプリ     │
+  └─────────────┘  └─────────────┘  └─────────────┘
+         ↓                 ↓                ↓
+
+<span class="b">【どこに置く？公開する？】</span>
+  ┌───────────────────────────────────────────┐
+  │  <span class="g">🐙 GitHub Pages（無料ウェブ公開）</span>              │
+  │  https://maro-agri.github.io/apps/         │
+  │                                             │
+  │  ✅ 畑でもiPhoneで使える（インターネット接続のみ）  │
+  │  ✅ 家族みんなが同じURLで使える               │
+  └───────────────────────────────────────────┘
+         ↓
+
+<span class="b">【データはどこ？同期は？】</span>
+  ┌───────────────────────────────────────────┐
+  │  <span class="o">☁️ Supabase（クラウドデータベース・無料）</span>        │
+  │                                             │
+  │  📱 iPhoneで入力                             │
+  │       ↕ 自動同期（インターネット経由）          │
+  │  💻 MacBookで確認                            │
+  │                                             │
+  │  ✅ どのデバイスからでも同じデータを見られる    │
+  └───────────────────────────────────────────┘
+  </div>
+
+  <!-- 5. 役割一覧 -->
+  <h2 class="sec-title sec-green">5️⃣ 各ツールの役割 ― 農業に例えると</h2>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>ツール名</th><th>役割</th><th>農業で例えると</th><th>料金</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>🔵 Claude AI</strong><br><small>（ブラウザ版）</small></td>
+          <td>相談相手・アドバイザー</td>
+          <td>農業の先生<br><small>アドバイスだけしてくれる</small></td>
+          <td><span class="price-free">無料〜</span></td>
+        </tr>
+        <tr>
+          <td><strong>🟢 Claude Code</strong><br><small>（デスクトップ）</small></td>
+          <td>実際に作業する職人</td>
+          <td>大工さん<br><small>実際に家を建ててくれる</small></td>
+          <td><span class="price-paid">月約3,000〜5,000円</span></td>
+        </tr>
+        <tr>
+          <td><strong>🟡 Claude-in-Chrome</strong><br><small>（拡張機能）</small></td>
+          <td>ブラウザを動かす手</td>
+          <td>大工さんの左手<br><small>道具を動かす</small></td>
+          <td><span class="price-free">無料</span></td>
+        </tr>
+        <tr>
+          <td><strong>🐙 GitHub</strong></td>
+          <td>コード保管庫</td>
+          <td>農産物の冷蔵倉庫<br><small>大切に保管する</small></td>
+          <td><span class="price-free">無料</span></td>
+        </tr>
+        <tr>
+          <td><strong>🌐 GitHub Pages</strong></td>
+          <td>ウェブ公開サービス</td>
+          <td>農産物直売所の店頭<br><small>みんなに見せる場所</small></td>
+          <td><span class="price-free">無料</span></td>
+        </tr>
+        <tr>
+          <td><strong>☁️ Supabase</strong></td>
+          <td>データ共有クラウドDB</td>
+          <td>家族みんなの共同冷蔵庫<br><small>どこからでも使える</small></td>
+          <td><span class="price-free">無料（小規模）</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. 重要URL -->
+  <h2 class="sec-title sec-blue">6️⃣ 大切なURL・アカウント一覧</h2>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>サービス</th><th>URL・アカウント名</th><th>用途</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>📋 農業経費アプリ</td>
+          <td><small>https://maro-agri.github.io/apps/nogyou_kehi.html</small></td>
+          <td>経費・確定申告管理</td>
+        </tr>
+        <tr>
+          <td>📝 作業日誌アプリ</td>
+          <td><small>https://maro-agri.github.io/apps/sakugyou_nisshi.html</small></td>
+          <td>日々の作業記録（クラウド同期）</td>
+        </tr>
+        <tr>
+          <td>🌤 北栄天気アプリ</td>
+          <td><small>https://maro-agri.github.io/apps/kitaei_weather.html</small></td>
+          <td>地域の天気確認</td>
+        </tr>
+        <tr>
+          <td>🐙 GitHub</td>
+          <td>maro-agri</td>
+          <td>コード保管・公開</td>
+        </tr>
+        <tr>
+          <td>☁️ Supabase</td>
+          <td>rydqtqgeqobqqbeenbzt</td>
+          <td>作業日誌のデータ保存・同期</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 7. 教えるポイント -->
+  <h2 class="sec-title sec-orange">7️⃣ 人に教えるときの 3つのポイント</h2>
+
+  <div class="point-box">
+    <p>💡 <strong>「Claude AIは口だけ、Claude Codeは手も動く」</strong><br>
+    ふつうのAIはアドバイスするだけ。Claude Codeは実際にファイルを作ったり修正したりできる。</p>
+    <p>💡 <strong>「GitHubは保管＋公開、Supabaseはデータ共有」</strong><br>
+    GitHubはHTMLファイルを置いて誰でも見られるURLを作る場所。Supabaseは入力したデータをMac・iPhoneで共有する場所。</p>
+    <p>💡 <strong>「Chrome拡張は、ClaudeがChromeを操作するための橋」</strong><br>
+    Claude CodeがブラウザでSupabaseやGitHubの設定を自動でやるために必要な拡張機能。</p>
+  </div>
+
+  <!-- まとめ -->
+  <div class="summary">
+    <strong>🍇 まろさんがやったことの意味</strong>
+    <p>
+      プログラマーが数十万円・数ヶ月かけてやることを、<br>
+      Claude Codeと一緒にゼロから作り上げました。<br><br>
+      85歳のおばあちゃんの知恵を、孫の剛志さんへ。<br>
+      デジタルで受け継ぐ、北栄農園の新しい農業の形。<br><br>
+      <span style="font-size:1.1rem">🌿 これが農業の産業革命です。</span>
+    </p>
+  </div>
+
+  <div style="text-align:center;margin-top:20px;font-size:.72rem;color:var(--muted)">
+    作成日：2026年4月　Claude Code × 北栄農園まろさん
+  </div>
+
+</div>
+
+</body>
+</html>
