@@ -3,130 +3,174 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Claude Code 活用ガイド ― 北栄農園デジタル化</title>
+  <title>Claude Code 活用ガイド ― 清水農園デジタル化</title>
   <style>
     :root{
-      --green:#27AE60;--green-d:#1E8449;--blue:#2980B9;
-      --orange:#E67E22;--brown:#7D5A2F;--purple:#8E44AD;
-      --bg:#FAFFFE;--card:#fff;--text:#2C2C2C;--muted:#7F8C8D;
+      --green:#27AE60;--green-d:#1E8449;--green-l:#E8F8EF;
+      --blue:#2980B9;--blue-l:#EBF5FB;
+      --orange:#E67E22;--orange-l:#FEF3E2;
+      --brown:#7D5A2F;--brown-l:#FDF3E3;
+      --purple:#8E44AD;--purple-l:#F5EEF8;
+      --red:#E74C3C;--red-l:#FDEAEA;
+      --yellow:#F1C40F;--yellow-l:#FEFDE7;
+      --bg:#F8FFFA;--card:#fff;--text:#2C2C2C;--muted:#7F8C8D;
+      --shadow:0 2px 12px rgba(0,0,0,.09);
     }
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,'Hiragino Sans','Yu Gothic',sans-serif;
       background:var(--bg);color:var(--text);font-size:14px;line-height:1.8}
 
-    /* 印刷ボタン */
+    /* 印刷ボタンバー */
     .print-bar{background:linear-gradient(135deg,#1a5276,var(--blue));
-      color:#fff;padding:12px 20px;display:flex;align-items:center;
-      justify-content:space-between;position:sticky;top:0;z-index:100}
-    .print-bar h2{font-size:.95rem;font-weight:800}
+      color:#fff;padding:11px 20px;display:flex;align-items:center;
+      justify-content:space-between;position:sticky;top:0;z-index:100;
+      box-shadow:0 2px 8px rgba(0,0,0,.2)}
+    .print-bar-title{font-size:.88rem;font-weight:800}
     .print-btn{background:#fff;color:var(--blue);border:none;border-radius:8px;
-      padding:8px 18px;font-size:.85rem;font-weight:800;cursor:pointer}
+      padding:8px 18px;font-size:.85rem;font-weight:800;cursor:pointer;
+      box-shadow:0 2px 6px rgba(0,0,0,.15)}
     .print-btn:hover{background:#EBF5FB}
 
-    .wrap{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+    .wrap{max-width:900px;margin:0 auto;padding:20px 14px 60px}
 
-    /* ヘッダー */
-    .hero{background:linear-gradient(135deg,#1a3a1a,var(--green-d),var(--green));
-      color:#fff;border-radius:16px;padding:28px 24px;margin-bottom:24px;text-align:center}
-    .hero h1{font-size:1.4rem;font-weight:900;margin-bottom:6px}
-    .hero .sub{font-size:.82rem;opacity:.9}
+    /* ヒーロー */
+    .hero{background:linear-gradient(135deg,#1a3a1a,#2d6a2d,#27AE60);
+      color:#fff;border-radius:18px;padding:28px 20px;margin-bottom:24px;
+      text-align:center;box-shadow:var(--shadow)}
+    .hero h1{font-size:1.45rem;font-weight:900;margin-bottom:6px}
+    .hero .sub{font-size:.82rem;opacity:.9;line-height:1.9}
 
-    /* セクション */
-    h2.sec-title{font-size:1rem;font-weight:800;padding:8px 14px;
-      border-radius:8px;margin:24px 0 12px;color:#fff}
-    .sec-green{background:var(--green-d)}
-    .sec-blue{background:#1a5276}
-    .sec-orange{background:#a04000}
-    .sec-brown{background:var(--brown)}
-    .sec-purple{background:var(--purple)}
+    /* セクションタイトル */
+    .sec-head{display:flex;align-items:center;gap:10px;margin:28px 0 14px}
+    .sec-num{width:34px;height:34px;border-radius:50%;display:flex;
+      align-items:center;justify-content:center;font-size:.9rem;
+      font-weight:900;color:#fff;flex-shrink:0}
+    .sec-label{font-size:1rem;font-weight:800;color:var(--text)}
+    .bg-blue{background:var(--blue)}
+    .bg-green{background:var(--green-d)}
+    .bg-orange{background:var(--orange)}
+    .bg-brown{background:var(--brown)}
+    .bg-purple{background:var(--purple)}
+    .bg-red{background:var(--red)}
 
     /* カード */
-    .card{background:var(--card);border-radius:12px;
-      box-shadow:0 2px 10px rgba(0,0,0,.08);padding:16px;margin-bottom:12px}
-    .card-title{font-size:.9rem;font-weight:800;margin-bottom:8px;
-      display:flex;align-items:center;gap:6px}
-    .badge{display:inline-block;padding:2px 10px;border-radius:12px;
-      font-size:.7rem;font-weight:800;color:#fff;margin-left:6px}
-    .bg-green{background:var(--green)}
-    .bg-blue{background:var(--blue)}
-    .bg-orange{background:var(--orange)}
-    .bg-red{background:#E74C3C}
+    .card{background:var(--card);border-radius:14px;
+      box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
 
-    /* 比較ボックス */
+    /* AI比較 */
     .compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-    .box{border-radius:10px;padding:14px}
-    .box-blue{background:#EBF5FB;border:2px solid #AED6F1}
-    .box-green{background:#E8F8EF;border:2px solid #A9DFBF}
-    .box-title{font-size:.82rem;font-weight:800;margin-bottom:8px}
-    .ok{color:var(--green);font-weight:700}
-    .ng{color:#E74C3C;font-weight:700}
+    .cbox{border-radius:12px;padding:16px}
+    .cbox-blue{background:var(--blue-l);border:2px solid #AED6F1}
+    .cbox-green{background:var(--green-l);border:2px solid #A9DFBF}
+    .cbox-title{font-size:.9rem;font-weight:800;margin-bottom:10px;
+      display:flex;align-items:center;gap:6px}
+    .ok{color:var(--green-d);font-size:.82rem;font-weight:700;
+      display:flex;align-items:center;gap:4px;margin-bottom:4px}
+    .ng{color:var(--red);font-size:.82rem;font-weight:700;
+      display:flex;align-items:center;gap:4px;margin-bottom:4px}
 
-    /* 例題カード */
-    .example-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
-    .ex-card{background:var(--card);border-radius:10px;padding:13px;
-      border-left:4px solid var(--green);box-shadow:0 1px 6px rgba(0,0,0,.07)}
-    .ex-num{font-size:.65rem;font-weight:800;color:var(--muted);margin-bottom:4px}
+    /* 全体MAP ― カード式 */
+    .map-flow{display:flex;flex-direction:column;gap:0;align-items:center}
+    .map-row{display:flex;gap:10px;justify-content:center;width:100%;flex-wrap:wrap}
+    .map-card{border-radius:14px;padding:14px 12px;text-align:center;
+      flex:1;min-width:150px;max-width:220px;box-shadow:var(--shadow)}
+    .map-arrow{font-size:1.8rem;color:var(--muted);text-align:center;
+      padding:4px 0;line-height:1}
+    .map-arrow-row{display:flex;justify-content:center;gap:60px;padding:2px 0}
+    .map-icon{font-size:2.2rem;margin-bottom:6px}
+    .map-name{font-size:.82rem;font-weight:800;margin-bottom:4px}
+    .map-desc{font-size:.7rem;line-height:1.6;color:#555}
+    .mc-user{background:linear-gradient(135deg,#d4efdf,#a9dfbf);border:2px solid var(--green)}
+    .mc-claude{background:linear-gradient(135deg,#d6eaf8,#aed6f1);border:2px solid var(--blue)}
+    .mc-chrome{background:linear-gradient(135deg,#fef9e7,#fdebd0);border:2px solid var(--orange)}
+    .mc-github{background:linear-gradient(135deg,#f0f0f0,#d6d6d6);border:2px solid #888}
+    .mc-supabase{background:linear-gradient(135deg,#d1f2eb,#a3e4d7);border:2px solid #1abc9c}
+    .mc-icloud{background:linear-gradient(135deg,#d6eaf8,#aed6f1);border:2px solid #5dade2}
+    .connect-line{text-align:center;font-size:.75rem;color:var(--muted);
+      font-weight:700;padding:2px 0}
+
+    /* 例題グリッド */
+    .ex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+    .ex-card{background:var(--card);border-radius:12px;padding:13px;
+      box-shadow:var(--shadow);border-top:4px solid var(--green)}
+    .ex-num{font-size:.65rem;font-weight:800;color:var(--muted);margin-bottom:3px}
+    .ex-icon{font-size:1.5rem;margin-bottom:5px}
     .ex-title{font-size:.85rem;font-weight:800;margin-bottom:6px}
-    .ex-body{font-size:.78rem;color:#444;line-height:1.7;
-      background:#F8F9FA;border-radius:6px;padding:7px 9px}
-    .ex-result{font-size:.72rem;color:var(--green-d);font-weight:700;
-      margin-top:6px}
+    .ex-msg{font-size:.75rem;background:#F4F6F7;border-radius:8px;
+      padding:7px 9px;line-height:1.7;color:#333;border-left:3px solid var(--blue)}
+    .ex-result{font-size:.72rem;color:var(--green-d);font-weight:700;margin-top:6px;
+      display:flex;align-items:center;gap:4px}
 
-    /* 全体MAP */
-    .map{background:#0d1117;border-radius:12px;padding:18px;color:#c9d1d9;
-      font-family:'Courier New',monospace;font-size:.78rem;line-height:2;overflow-x:auto}
-    .map .g{color:#56d364}
-    .map .b{color:#58a6ff}
-    .map .o{color:#f9a825}
-    .map .y{color:#ffd700}
+    /* アプリカード */
+    .app-card{border-radius:14px;padding:18px;margin-bottom:14px;
+      box-shadow:var(--shadow)}
+    .app-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .app-icon{font-size:2rem}
+    .app-title{font-size:1rem;font-weight:900}
+    .app-sub{font-size:.72rem;color:var(--muted)}
+    .url-box{background:rgba(255,255,255,.7);border-radius:8px;padding:8px 12px;
+      font-size:.75rem;font-family:'Courier New',monospace;word-break:break-all;
+      border:1px solid rgba(0,0,0,.1);margin-bottom:8px}
+    .steps{counter-reset:step}
+    .step{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;font-size:.8rem}
+    .step-n{background:var(--blue);color:#fff;width:22px;height:22px;
+      border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-size:.7rem;font-weight:800;flex-shrink:0;margin-top:2px}
+    .tag{display:inline-block;padding:2px 8px;border-radius:10px;
+      font-size:.65rem;font-weight:800;color:#fff;margin-right:4px}
 
     /* 料金表 */
-    table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden}
-    th{background:var(--green-d);color:#fff;padding:10px 14px;
-      font-size:.8rem;text-align:left}
-    td{padding:9px 14px;font-size:.82rem;border-bottom:1px solid #F0F0F0}
+    table{width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;
+      box-shadow:var(--shadow)}
+    th{background:var(--green-d);color:#fff;padding:10px 14px;font-size:.8rem;text-align:left}
+    td{padding:9px 14px;font-size:.81rem;border-bottom:1px solid #F0F0F0}
     tr:last-child td{border-bottom:none}
     tr:nth-child(even) td{background:#F8FFF8}
-    .price-free{color:var(--green);font-weight:800}
-    .price-paid{color:var(--orange);font-weight:800}
+    .free{color:var(--green-d);font-weight:800}
+    .paid{color:var(--orange);font-weight:800}
 
     /* ポイント */
-    .point-box{background:linear-gradient(135deg,#FEF3E2,#FFFDF5);
-      border:2px solid #FAD7A0;border-radius:12px;padding:16px;margin-bottom:12px}
-    .point-box p{font-size:.85rem;margin-bottom:8px;padding-left:10px;
-      border-left:3px solid var(--orange)}
-    .point-box p:last-child{margin-bottom:0}
+    .point-box{background:var(--yellow-l);border:2px solid #F9CA24;
+      border-radius:12px;padding:16px;margin-bottom:12px}
+    .point{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+    .point:last-child{margin-bottom:0}
+    .point-icon{font-size:1.3rem;flex-shrink:0}
+    .point-text{font-size:.83rem;line-height:1.7}
 
     /* まとめ */
-    .summary{background:linear-gradient(135deg,#1a3a1a,var(--green-d));
-      color:#fff;border-radius:12px;padding:20px;text-align:center}
+    .summary{background:linear-gradient(135deg,#1a3a1a,#2d6a2d,#27AE60);
+      color:#fff;border-radius:16px;padding:22px;text-align:center}
     .summary p{font-size:.88rem;line-height:2;opacity:.95}
-    .summary strong{font-size:1rem;display:block;margin-bottom:8px}
+    .summary strong{font-size:1.05rem;display:block;margin-bottom:8px}
 
-    /* 印刷用スタイル */
+    /* フッター */
+    .footer{text-align:center;margin-top:20px;font-size:.7rem;color:var(--muted)}
+
+    /* 印刷スタイル */
     @media print{
-      .print-bar{display:none}
+      .print-bar{display:none !important}
       body{background:#fff;font-size:11px}
       .wrap{padding:0;max-width:100%}
-      .map{background:#1a1a1a;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .hero,.summary,.sec-title{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .card{box-shadow:none;border:1px solid #ddd}
+      .hero,.summary{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .sec-num,.tag{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .mc-user,.mc-claude,.mc-chrome,.mc-github,.mc-supabase,.mc-icloud{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .app-card{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .ex-card,.card,.app-card{box-shadow:none;border:1px solid #ddd;page-break-inside:avoid}
       .compare{grid-template-columns:1fr 1fr}
-      .example-grid{grid-template-columns:repeat(3,1fr)}
-      h2.sec-title{page-break-before:auto}
-      .ex-card{page-break-inside:avoid}
+      .ex-grid{grid-template-columns:repeat(3,1fr)}
     }
     @media(max-width:600px){
       .compare{grid-template-columns:1fr}
-      .example-grid{grid-template-columns:1fr}
+      .ex-grid{grid-template-columns:1fr 1fr}
+      .map-row{flex-direction:column;align-items:center}
+      .map-arrow-row{gap:20px}
     }
   </style>
 </head>
 <body>
 
-<!-- 印刷バー -->
 <div class="print-bar">
-  <h2>🌿 Claude Code 活用ガイド ― 北栄農園デジタル化</h2>
+  <div class="print-bar-title">🌿 清水農園 × Claude Code 活用ガイド</div>
   <button class="print-btn" onclick="window.print()">🖨️ 印刷・PDF保存</button>
 </div>
 
@@ -134,306 +178,505 @@
 
   <!-- ヒーロー -->
   <div class="hero">
-    <h1>🌿 Claude Code で農業デジタル化</h1>
-    <div class="sub">まろさん・剛志さんのための完全ガイド<br>
-    Claude Code × GitHub × Supabase ― 北栄農園の産業革命</div>
+    <div style="font-size:2rem;margin-bottom:8px">🍇🌿🖥️</div>
+    <h1>Claude Code で農業デジタル化</h1>
+    <div class="sub">
+      清水農園の産業革命 ― まろさん・剛志さんのための完全ガイド<br>
+      Claude Code × GitHub Pages × Supabase
+    </div>
   </div>
 
-  <!-- 1. AIの違い -->
-  <h2 class="sec-title sec-blue">1️⃣ ふつうのClaude AI と Claude Code の違い</h2>
+
+  <!-- ① AIの違い -->
+  <div class="sec-head">
+    <div class="sec-num bg-blue">1</div>
+    <div class="sec-label">ふつうのClaude AI と Claude Code ― 何が違うの？</div>
+  </div>
 
   <div class="compare">
-    <div class="box box-blue">
-      <div class="box-title">🔵 ふつうのClaude AI（ブラウザ）</div>
-      <div style="font-size:.8rem;margin-bottom:8px;color:#555">
-        「先生」のような存在。アドバイスはしてくれるが、実際には何もやってくれない。
+    <div class="cbox cbox-blue">
+      <div class="cbox-title">🔵 ふつうのClaude AI<br><small style="font-weight:400;font-size:.72rem">（ブラウザで使うAI）</small></div>
+      <div style="font-size:.75rem;color:#555;margin-bottom:10px;background:rgba(255,255,255,.6);padding:6px 9px;border-radius:7px">
+        🧑‍🏫 農業の先生みたいな存在。<br>アドバイスはくれるが、自分では何もしない。
       </div>
-      <div class="ok">✅ 質問に答える</div><br>
-      <div class="ok">✅ 文章を書く</div><br>
-      <div class="ok">✅ コードを「提案」する</div><br>
-      <div class="ng">❌ ファイルを保存する</div><br>
-      <div class="ng">❌ ブラウザを操作する</div><br>
-      <div class="ng">❌ GitHubにアップする</div>
+      <div class="ok">✅ 質問に答えてくれる</div>
+      <div class="ok">✅ 文章を書いてくれる</div>
+      <div class="ok">✅ コードを提案してくれる</div>
+      <div class="ng">❌ ファイルを保存できない</div>
+      <div class="ng">❌ ブラウザを操作できない</div>
+      <div class="ng">❌ GitHubにアップできない</div>
     </div>
-    <div class="box box-green">
-      <div class="box-title">🟢 Claude Code（デスクトップアプリ）</div>
-      <div style="font-size:.8rem;margin-bottom:8px;color:#555">
-        「職人」のような存在。言葉で頼むと実際に手を動かして作業してくれる。
+    <div class="cbox cbox-green">
+      <div class="cbox-title">🟢 Claude Code<br><small style="font-weight:400;font-size:.72rem">（デスクトップアプリ）</small></div>
+      <div style="font-size:.75rem;color:#555;margin-bottom:10px;background:rgba(255,255,255,.6);padding:6px 9px;border-radius:7px">
+        🔨 大工さんみたいな存在。<br>言葉で頼むと実際に手を動かして完成させる。
       </div>
-      <div class="ok">✅ HTMLファイルを直接修正・保存</div><br>
-      <div class="ok">✅ GitHubにアップロード</div><br>
-      <div class="ok">✅ Supabaseの設定をする</div><br>
-      <div class="ok">✅ Chromeを自動操作</div><br>
-      <div class="ok">✅ プログラムを実行する</div><br>
-      <div class="ok">✅ 複数サービスを連携</div>
+      <div class="ok">✅ HTMLファイルを直接修正・保存</div>
+      <div class="ok">✅ GitHubにアップロード</div>
+      <div class="ok">✅ Supabaseの設定・連携</div>
+      <div class="ok">✅ Chromeブラウザを自動操作</div>
+      <div class="ok">✅ プログラムを実行する</div>
+      <div class="ok">✅ 複数サービスを同時に連携</div>
     </div>
   </div>
 
-  <div class="card" style="border-left:4px solid var(--orange);background:#FFFDF5">
-    <div style="font-size:.9rem;text-align:center;font-weight:800;color:var(--orange)">
-      💡 一言で言うと
-    </div>
-    <div style="font-size:1rem;text-align:center;margin-top:8px;font-weight:700">
-      「Claude AIは口だけ、Claude Codeは手も動く」
+  <div class="card" style="background:var(--yellow-l);border:2px solid #F9CA24;text-align:center">
+    <div style="font-size:1rem;font-weight:900">
+      💡「Claude AIは口だけ、Claude Codeは手も動く」
     </div>
   </div>
 
-  <!-- 2. Claude-in-Chrome -->
-  <h2 class="sec-title sec-blue">2️⃣ Claude-in-Chrome（Chrome拡張機能）の役割</h2>
+
+  <!-- ② 全体MAP -->
+  <div class="sec-head">
+    <div class="sec-num bg-green">2</div>
+    <div class="sec-label">清水農園 デジタル化 全体MAP</div>
+  </div>
+
+  <div class="card" style="padding:20px">
+
+    <!-- 人 -->
+    <div class="map-flow">
+      <div class="map-row">
+        <div class="map-card mc-user" style="max-width:280px">
+          <div class="map-icon">👩‍🌾👨‍🌾</div>
+          <div class="map-name">まろさん・剛志さん</div>
+          <div class="map-desc">「こうしたい」と言葉で伝えるだけ</div>
+        </div>
+      </div>
+
+      <div class="map-arrow">⬇️</div>
+      <div class="connect-line">言葉で依頼</div>
+      <div class="map-arrow">⬇️</div>
+
+      <!-- Claude Code -->
+      <div class="map-row">
+        <div class="map-card mc-claude" style="max-width:320px">
+          <div class="map-icon">🤖</div>
+          <div class="map-name">Claude Code（頭脳＋手）</div>
+          <div class="map-desc">コードを考えて・ファイルを作って・設定まで全部やる</div>
+        </div>
+      </div>
+
+      <div class="map-arrow-row">
+        <div style="text-align:center">
+          <div style="font-size:1.3rem">⬇️</div>
+          <div style="font-size:.68rem;color:var(--muted)">ファイル作成・修正</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:1.3rem">⬇️</div>
+          <div style="font-size:.68rem;color:var(--muted)">ブラウザ操作</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:1.3rem">⬇️</div>
+          <div style="font-size:.68rem;color:var(--muted)">アップロード・連携</div>
+        </div>
+      </div>
+
+      <!-- 3列 -->
+      <div class="map-row">
+        <div class="map-card mc-icloud">
+          <div class="map-icon">📁</div>
+          <div class="map-name">Mac / iCloud</div>
+          <div class="map-desc">HTMLファイルを<br>読む・書く・保存</div>
+        </div>
+        <div class="map-card mc-chrome">
+          <div class="map-icon">🟡</div>
+          <div class="map-name">Chrome-in-Chrome</div>
+          <div class="map-desc">Chromeを自動操作<br>（設定・データ取得）</div>
+        </div>
+        <div class="map-card mc-github" style="background:linear-gradient(135deg,#f0f0f0,#e0e0e0)">
+          <div class="map-icon">🐙</div>
+          <div class="map-name">GitHub</div>
+          <div class="map-desc">ファイルをネットで<br>公開（無料）</div>
+        </div>
+      </div>
+
+      <!-- GitHub → URL & Supabase -->
+      <div style="display:flex;gap:30px;justify-content:center;width:100%">
+        <div style="text-align:center">
+          <div style="font-size:1.2rem">⬇️</div>
+          <div style="font-size:.65rem;color:var(--muted)">公開URL生成</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:1.2rem">↗️</div>
+          <div style="font-size:.65rem;color:var(--muted)">データ保存・同期</div>
+        </div>
+      </div>
+
+      <div class="map-row">
+        <div class="map-card" style="background:linear-gradient(135deg,#eaf4fb,#d0e8f5);border:2px solid #2980B9;max-width:260px">
+          <div class="map-icon">🌐</div>
+          <div class="map-name">GitHub Pages（無料公開）</div>
+          <div class="map-desc">
+            畑でもiPhoneで使える<br>
+            <strong style="font-size:.7rem">maro-agri.github.io/apps/</strong>
+          </div>
+        </div>
+        <div class="map-card mc-supabase">
+          <div class="map-icon">☁️</div>
+          <div class="map-name">Supabase（クラウドDB）</div>
+          <div class="map-desc">Mac・iPhoneが<br>同じデータを共有</div>
+        </div>
+      </div>
+
+      <div class="map-arrow">⬇️</div>
+
+      <!-- 最終ユーザー -->
+      <div class="map-row">
+        <div class="map-card mc-user" style="max-width:340px">
+          <div class="map-icon">📱💻</div>
+          <div class="map-name">どこからでも使える！</div>
+          <div class="map-desc">iPhoneで入力 ↔ MacBookで確認<br>畑でも・家でも・どこでも同じデータ</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /map card -->
+
+
+  <!-- ③ 3つのアプリ＋使い方 -->
+  <div class="sec-head">
+    <div class="sec-num bg-orange">3</div>
+    <div class="sec-label">清水農園の3つのアプリ ― 保存場所・印刷・PDF方法</div>
+  </div>
+
+  <!-- 作業日誌 -->
+  <div class="app-card" style="background:linear-gradient(135deg,var(--green-l),#fff);border:2px solid var(--green)">
+    <div class="app-header">
+      <div class="app-icon">📝</div>
+      <div>
+        <div class="app-title">作業日誌アプリ</div>
+        <div class="app-sub">日々の作業記録・おばあちゃんの知恵袋・Mac↔iPhone同期</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:.75rem;font-weight:800;color:var(--green-d);margin-bottom:4px">🌐 ネットで開くURL（畑でもiPhoneでも）</div>
+      <div class="url-box">https://maro-agri.github.io/apps/sakugyou_nisshi.html</div>
+      <div style="font-size:.75rem;font-weight:800;color:var(--green-d);margin-bottom:4px">📁 Mac・iCloudに保存されているファイル</div>
+      <div class="url-box">iCloud Drive → sakugyou_nisshi.html</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:rgba(255,255,255,.8);border-radius:10px;padding:12px">
+        <div style="font-size:.78rem;font-weight:800;color:var(--blue);margin-bottom:8px">🖥️ MacBookから使う</div>
+        <div class="step"><div class="step-n">1</div><div>Chromeで上のURLを開く</div></div>
+        <div class="step"><div class="step-n">2</div><div>日誌を入力・保存</div></div>
+        <div class="step"><div class="step-n">3</div><div>☁️ 同期完了 と表示される</div></div>
+      </div>
+      <div style="background:rgba(255,255,255,.8);border-radius:10px;padding:12px">
+        <div style="font-size:.78rem;font-weight:800;color:var(--orange);margin-bottom:8px">📱 iPhoneから使う</div>
+        <div class="step"><div class="step-n">1</div><div>Safariで上のURLを開く</div></div>
+        <div class="step"><div class="step-n">2</div><div>共有→「ホーム画面に追加」</div></div>
+        <div class="step"><div class="step-n">3</div><div>アイコンをタップして使う</div></div>
+      </div>
+    </div>
+
+    <div style="background:rgba(255,255,255,.8);border-radius:10px;padding:12px;margin-top:10px">
+      <div style="font-size:.78rem;font-weight:800;color:var(--brown);margin-bottom:8px">🖨️ 印刷・PDFに保存する方法</div>
+      <div class="step"><div class="step-n">1</div><div>「記録一覧」タブを開き、印刷したい月を選ぶ</div></div>
+      <div class="step"><div class="step-n">2</div><div>Chromeメニュー → 「印刷」（Command+P）</div></div>
+      <div class="step"><div class="step-n">3</div><div>プリンターを選ぶ → 印刷 ／ または「PDFに保存」を選ぶ</div></div>
+      <div class="step"><div class="step-n">4</div><div>PDFはiCloudやメールで家族にも共有できる</div></div>
+    </div>
+  </div>
+
+  <!-- 農業経費 -->
+  <div class="app-card" style="background:linear-gradient(135deg,var(--blue-l),#fff);border:2px solid var(--blue)">
+    <div class="app-header">
+      <div class="app-icon">📋</div>
+      <div>
+        <div class="app-title">農業経費管理アプリ</div>
+        <div class="app-sub">経費入力・月別集計・確定申告対応</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:4px">🌐 ネットで開くURL</div>
+      <div class="url-box">https://maro-agri.github.io/apps/nogyou_kehi.html</div>
+      <div style="font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:4px">📁 Mac・iCloudに保存されているファイル</div>
+      <div class="url-box">iCloud Drive → nogyou_kehi.html</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:rgba(255,255,255,.8);border-radius:10px;padding:12px">
+        <div style="font-size:.78rem;font-weight:800;color:var(--blue);margin-bottom:8px">🖥️ MacBookから使う</div>
+        <div class="step"><div class="step-n">1</div><div>Chromeで上のURLを開く</div></div>
+        <div class="step"><div class="step-n">2</div><div>「経費管理」タブで入力</div></div>
+        <div class="step"><div class="step-n">3</div><div>「確定申告」タブで集計確認</div></div>
+      </div>
+      <div style="background:rgba(255,255,255,.8);border-radius:10px;padding:12px">
+        <div style="font-size:.78rem;font-weight:800;color:var(--orange);margin-bottom:8px">📱 iPhoneから使う</div>
+        <div class="step"><div class="step-n">1</div><div>Safariで上のURLを開く</div></div>
+        <div class="step"><div class="step-n">2</div><div>左右にスワイプでタブ切替</div></div>
+        <div class="step"><div class="step-n">3</div><div>共有→ホーム画面に追加も可能</div></div>
+      </div>
+    </div>
+
+    <div style="background:rgba(255,255,255,.8);border-radius:10px;padding:12px;margin-top:10px">
+      <div style="font-size:.78rem;font-weight:800;color:var(--brown);margin-bottom:8px">🖨️ 印刷・PDFに保存する方法</div>
+      <div class="step"><div class="step-n">1</div><div>「確定申告」タブを開いて年度を選ぶ</div></div>
+      <div class="step"><div class="step-n">2</div><div>Chromeメニュー → 「印刷」（Command+P）</div></div>
+      <div class="step"><div class="step-n">3</div><div>「背景のグラフィック」にチェックを入れると色もきれいに印刷できる</div></div>
+      <div class="step"><div class="step-n">4</div><div>「PDFに保存」でデータ保存・税理士へのメール添付にも使える</div></div>
+    </div>
+  </div>
+
+  <!-- 天気アプリ -->
+  <div class="app-card" style="background:linear-gradient(135deg,var(--orange-l),#fff);border:2px solid var(--orange)">
+    <div class="app-header">
+      <div class="app-icon">🌤</div>
+      <div>
+        <div class="app-title">北栄町 天気アプリ</div>
+        <div class="app-sub">地域の天気・農作業判断の参考に</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:.75rem;font-weight:800;color:var(--orange);margin-bottom:4px">🌐 ネットで開くURL</div>
+      <div class="url-box">https://maro-agri.github.io/apps/kitaei_weather.html</div>
+      <div style="font-size:.75rem;font-weight:800;color:var(--orange);margin-bottom:4px">📁 Mac・iCloudに保存されているファイル</div>
+      <div class="url-box">iCloud Drive → kitaei_weather.html</div>
+    </div>
+
+    <div style="background:rgba(255,255,255,.8);border-radius:10px;padding:12px">
+      <div style="font-size:.78rem;font-weight:800;color:var(--brown);margin-bottom:8px">🖨️ 印刷・PDFに保存する方法</div>
+      <div class="step"><div class="step-n">1</div><div>天気が表示されたらCommand+P で印刷画面を開く</div></div>
+      <div class="step"><div class="step-n">2</div><div>「1ページに収める」を選ぶとA4 1枚に収まる</div></div>
+      <div class="step"><div class="step-n">3</div><div>PDFに保存して日誌と一緒に記録してもOK</div></div>
+    </div>
+  </div>
+
+
+  <!-- ④ Chrome-in-Chrome -->
+  <div class="sec-head">
+    <div class="sec-num bg-orange">4</div>
+    <div class="sec-label">Chrome-in-Chrome（拡張機能）の役割</div>
+  </div>
 
   <div class="card">
-    <div class="card-title">🟡 Chrome拡張機能とは？</div>
-    <div style="font-size:.83rem;margin-bottom:10px">
-      Claude CodeがChromeブラウザを「手として使うための橋」です。<br>
-      これがあることで、Claude CodeがChromeを自動操作できます。
+    <div style="text-align:center;font-size:1.8rem;margin-bottom:10px">🤖 ➡️ 🟡 ➡️ 🌐</div>
+    <div style="text-align:center;font-size:.85rem;font-weight:700;margin-bottom:12px">
+      Claude Code が Chrome を「手として使うための橋」
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
-      <div style="background:#FFFDE7;border-radius:8px;padding:10px;font-size:.78rem;text-align:center">
-        🌐<br>ページを開く・閉じる
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">
+      <div style="background:var(--yellow-l);border-radius:9px;padding:10px;text-align:center">
+        <div style="font-size:1.3rem">🌐</div>
+        <div style="font-size:.75rem;font-weight:700;margin-top:4px">ページを開く・閉じる</div>
       </div>
-      <div style="background:#FFFDE7;border-radius:8px;padding:10px;font-size:.78rem;text-align:center">
-        👆<br>ボタンをクリック
+      <div style="background:var(--yellow-l);border-radius:9px;padding:10px;text-align:center">
+        <div style="font-size:1.3rem">👆</div>
+        <div style="font-size:.75rem;font-weight:700;margin-top:4px">ボタンをクリック</div>
       </div>
-      <div style="background:#FFFDE7;border-radius:8px;padding:10px;font-size:.78rem;text-align:center">
-        ⌨️<br>文字を自動入力
+      <div style="background:var(--yellow-l);border-radius:9px;padding:10px;text-align:center">
+        <div style="font-size:1.3rem">⌨️</div>
+        <div style="font-size:.75rem;font-weight:700;margin-top:4px">文字を自動入力</div>
       </div>
-      <div style="background:#FFFDE7;border-radius:8px;padding:10px;font-size:.78rem;text-align:center">
-        👀<br>画面の内容を読む
+      <div style="background:var(--yellow-l);border-radius:9px;padding:10px;text-align:center">
+        <div style="font-size:1.3rem">👀</div>
+        <div style="font-size:.75ms;font-weight:700;margin-top:4px">画面を読み取る</div>
       </div>
-      <div style="background:#FFFDE7;border-radius:8px;padding:10px;font-size:.78rem;text-align:center">
-        📊<br>データを取得する
+      <div style="background:var(--yellow-l);border-radius:9px;padding:10px;text-align:center">
+        <div style="font-size:1.3rem">📊</div>
+        <div style="font-size:.75rem;font-weight:700;margin-top:4px">データを取得する</div>
       </div>
     </div>
-    <div style="font-size:.78rem;color:var(--muted);margin-top:10px;text-align:center">
-      → Supabaseのセットアップやデータ確認に活躍しました！
+    <div style="font-size:.75rem;color:var(--muted);margin-top:10px;text-align:center">
+      → Supabaseのテーブル作成・APIキー取得などで活躍しました！
     </div>
   </div>
 
-  <!-- 3. できること10選 -->
-  <h2 class="sec-title sec-green">3️⃣ Claude Code でできること 10の例</h2>
 
-  <div class="example-grid">
-    <div class="ex-card">
+  <!-- ⑤ できること10選 -->
+  <div class="sec-head">
+    <div class="sec-num bg-purple">5</div>
+    <div class="sec-label">Claude Code でできること 10の具体例</div>
+  </div>
+
+  <div class="ex-grid">
+    <div class="ex-card" style="border-top-color:#3498DB">
       <div class="ex-num">例題 01</div>
-      <div class="ex-title">📁 ファイルの自動整理</div>
-      <div class="ex-body">「デスクトップの写真を2024・2025・2026年のフォルダに分けて」</div>
-      <div class="ex-result">→ 自動で分類・移動完了！</div>
+      <div class="ex-icon">📁</div>
+      <div class="ex-title">ファイルの自動整理</div>
+      <div class="ex-msg">「デスクトップの写真を2024・2025・2026年のフォルダに分けて」</div>
+      <div class="ex-result">✅ 自動で分類・移動完了！</div>
     </div>
-    <div class="ex-card">
+    <div class="ex-card" style="border-top-color:#E67E22">
       <div class="ex-num">例題 02</div>
-      <div class="ex-title">📊 グラフ付き集計表を作る</div>
-      <div class="ex-body">「農業の売上データをもとに月別グラフ付きHTMLページを作って」</div>
-      <div class="ex-result">→ 農業経費管理アプリが完成！</div>
+      <div class="ex-icon">📊</div>
+      <div class="ex-title">グラフ付き集計表を作る</div>
+      <div class="ex-msg">「農業の売上データをもとに月別グラフ付きHTMLページを作って」</div>
+      <div class="ex-result">✅ 農業経費管理アプリが完成！</div>
     </div>
-    <div class="ex-card">
+    <div class="ex-card" style="border-top-color:#27AE60">
       <div class="ex-num">例題 03</div>
-      <div class="ex-title">📱 スマホアプリを作る</div>
-      <div class="ex-body">「天気と作業内容を記録できるiPhoneで使えるアプリを作って」</div>
-      <div class="ex-result">→ App Store不要の作業日誌完成！</div>
+      <div class="ex-icon">📱</div>
+      <div class="ex-title">スマホアプリを作る</div>
+      <div class="ex-msg">「天気と作業内容を記録できるiPhoneで使えるアプリを作って」</div>
+      <div class="ex-result">✅ App Store不要の作業日誌完成！</div>
     </div>
-    <div class="ex-card">
+    <div class="ex-card" style="border-top-color:#8E44AD">
       <div class="ex-num">例題 04</div>
-      <div class="ex-title">🌐 ウェブサイトを作って公開</div>
-      <div class="ex-body">「北栄農園の紹介ページを作ってインターネットで見られるようにして」</div>
-      <div class="ex-result">→ GitHub Pagesに無料公開！</div>
+      <div class="ex-icon">🌐</div>
+      <div class="ex-title">ウェブサイトを公開する</div>
+      <div class="ex-msg">「清水農園の紹介ページを作ってインターネットで見られるようにして」</div>
+      <div class="ex-result">✅ GitHub Pagesに無料公開！</div>
     </div>
-    <div class="ex-card">
+    <div class="ex-card" style="border-top-color:#1ABC9C">
       <div class="ex-num">例題 05</div>
-      <div class="ex-title">🔄 MacとiPhoneでデータ共有</div>
-      <div class="ex-body">「畑で入力したデータを家のMacでも見られるようにして」</div>
-      <div class="ex-result">→ Supabaseで自動同期！今回やったこと</div>
+      <div class="ex-icon">🔄</div>
+      <div class="ex-title">MacとiPhoneでデータ共有</div>
+      <div class="ex-msg">「畑で入力したデータを家のMacでも見られるようにして」</div>
+      <div class="ex-result">✅ Supabaseで自動同期！今回やったこと</div>
     </div>
-    <div class="ex-card">
+    <div class="ex-card" style="border-top-color:#E74C3C">
       <div class="ex-num">例題 06</div>
-      <div class="ex-title">🖥️ 毎日の天気を自動取得</div>
-      <div class="ex-body">「毎日気象庁のサイトを開いて北栄町の天気を取ってきて」</div>
-      <div class="ex-result">→ Chrome自動化でデータ収集！</div>
+      <div class="ex-icon">🤖</div>
+      <div class="ex-title">ウェブから自動でデータ取得</div>
+      <div class="ex-msg">「毎日気象庁のサイトを開いて北栄町の天気を取ってきて」</div>
+      <div class="ex-result">✅ Chrome自動化でデータ収集！</div>
     </div>
-    <div class="ex-card">
+    <div class="ex-card" style="border-top-color:#F39C12">
       <div class="ex-num">例題 07</div>
-      <div class="ex-title">📝 確定申告の書類を作る</div>
-      <div class="ex-body">「マネーフォワードのデータから確定申告用のまとめ表を作って」</div>
-      <div class="ex-result">→ データ読込・自動集計・整形！</div>
+      <div class="ex-icon">📝</div>
+      <div class="ex-title">確定申告の書類を作る</div>
+      <div class="ex-msg">「マネーフォワードのデータから確定申告用のまとめ表を作って」</div>
+      <div class="ex-result">✅ データ読込・自動集計・整形！</div>
     </div>
-    <div class="ex-card">
+    <div class="ex-card" style="border-top-color:#2980B9">
       <div class="ex-num">例題 08</div>
-      <div class="ex-title">🔧 アプリに機能を追加する</div>
-      <div class="ex-body">「担当者に『剛志・おばあちゃん・母・父・ここちゃん』を追加して」</div>
-      <div class="ex-result">→ ファイルを直接修正・保存！</div>
+      <div class="ex-icon">🔧</div>
+      <div class="ex-title">アプリに機能を追加する</div>
+      <div class="ex-msg">「担当者に『剛志・おばあちゃん・母・父・ここちゃん』を追加して」</div>
+      <div class="ex-result">✅ ファイルを直接修正・保存！</div>
     </div>
-    <div class="ex-card">
+    <div class="ex-card" style="border-top-color:#7D5A2F">
       <div class="ex-num">例題 09</div>
-      <div class="ex-title">📸 画面を見て判断する</div>
-      <div class="ex-body">スクリーンショットを見せると「ここをタップしてください」と教えてくれる</div>
-      <div class="ex-result">→ 画面を見て操作を案内！</div>
+      <div class="ex-icon">📸</div>
+      <div class="ex-title">画面を見て操作を案内する</div>
+      <div class="ex-msg">スクリーンショットを見せると「ここをタップしてください」と教えてくれる</div>
+      <div class="ex-result">✅ 画面を見て操作を案内！</div>
     </div>
-    <div class="ex-card">
+    <div class="ex-card" style="border-top-color:#16A085">
       <div class="ex-num">例題 10</div>
-      <div class="ex-title">🤖 複数サービスを同時連携</div>
-      <div class="ex-body">「GitHubに保存して、Supabaseと連携して、iPhoneで使えるようにして」</div>
-      <div class="ex-result">→ まるごと全部やってくれる！</div>
+      <div class="ex-icon">🤝</div>
+      <div class="ex-title">複数サービスを同時連携</div>
+      <div class="ex-msg">「GitHubに保存して、Supabaseと連携して、iPhoneで使えるようにして」</div>
+      <div class="ex-result">✅ まるごと全部やってくれる！</div>
     </div>
   </div>
 
-  <!-- 4. 全体MAP -->
-  <h2 class="sec-title sec-brown">4️⃣ 北栄農園 デジタル化 全体MAP</h2>
 
-  <div class="map">
-<span class="y">╔══════════════════════════════════════════════════════════╗</span>
-<span class="y">║      🌿 北栄農園 デジタル化プロジェクト 全体MAP             ║</span>
-<span class="y">╚══════════════════════════════════════════════════════════╝</span>
-
-<span class="b">【作る人】</span>
-  まろさん（アイデア・要望）
-       ＋
-  <span class="g">Claude Code</span>（実際に作る・GitHub・Supabase設定）
-       ↓
-
-<span class="b">【作ったもの】3つのHTMLアプリ</span>
-  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-  │ 📋 農業経費  │  │ 📝 作業日誌  │  │ 🌤 北栄天気  │
-  │   管理アプリ │  │   アプリ     │  │   アプリ     │
-  └─────────────┘  └─────────────┘  └─────────────┘
-         ↓                 ↓                ↓
-
-<span class="b">【どこに置く？公開する？】</span>
-  ┌───────────────────────────────────────────┐
-  │  <span class="g">🐙 GitHub Pages（無料ウェブ公開）</span>              │
-  │  https://maro-agri.github.io/apps/         │
-  │                                             │
-  │  ✅ 畑でもiPhoneで使える（インターネット接続のみ）  │
-  │  ✅ 家族みんなが同じURLで使える               │
-  └───────────────────────────────────────────┘
-         ↓
-
-<span class="b">【データはどこ？同期は？】</span>
-  ┌───────────────────────────────────────────┐
-  │  <span class="o">☁️ Supabase（クラウドデータベース・無料）</span>        │
-  │                                             │
-  │  📱 iPhoneで入力                             │
-  │       ↕ 自動同期（インターネット経由）          │
-  │  💻 MacBookで確認                            │
-  │                                             │
-  │  ✅ どのデバイスからでも同じデータを見られる    │
-  └───────────────────────────────────────────┘
+  <!-- ⑥ 役割表 -->
+  <div class="sec-head">
+    <div class="sec-num bg-brown">6</div>
+    <div class="sec-label">各ツールの役割と料金 一覧</div>
   </div>
 
-  <!-- 5. 役割一覧 -->
-  <h2 class="sec-title sec-green">5️⃣ 各ツールの役割 ― 農業に例えると</h2>
-
-  <div class="card">
+  <div class="card" style="padding:0;overflow:hidden">
     <table>
       <thead>
-        <tr><th>ツール名</th><th>役割</th><th>農業で例えると</th><th>料金</th></tr>
+        <tr><th>ツール</th><th>役割</th><th>農業で例えると</th><th>料金</th></tr>
       </thead>
       <tbody>
         <tr>
           <td><strong>🔵 Claude AI</strong><br><small>（ブラウザ版）</small></td>
-          <td>相談相手・アドバイザー</td>
-          <td>農業の先生<br><small>アドバイスだけしてくれる</small></td>
-          <td><span class="price-free">無料〜</span></td>
+          <td>相談・アドバイザー</td>
+          <td>農業の先生</td>
+          <td><span class="free">無料〜</span></td>
         </tr>
         <tr>
           <td><strong>🟢 Claude Code</strong><br><small>（デスクトップ）</small></td>
           <td>実際に作業する職人</td>
-          <td>大工さん<br><small>実際に家を建ててくれる</small></td>
-          <td><span class="price-paid">月約3,000〜5,000円</span></td>
+          <td>大工さん</td>
+          <td><span class="paid">月約3,000〜5,000円</span></td>
         </tr>
         <tr>
-          <td><strong>🟡 Claude-in-Chrome</strong><br><small>（拡張機能）</small></td>
+          <td><strong>🟡 Chrome-in-Chrome</strong><br><small>（拡張機能）</small></td>
           <td>ブラウザを動かす手</td>
-          <td>大工さんの左手<br><small>道具を動かす</small></td>
-          <td><span class="price-free">無料</span></td>
+          <td>大工の左手</td>
+          <td><span class="free">無料</span></td>
         </tr>
         <tr>
           <td><strong>🐙 GitHub</strong></td>
           <td>コード保管庫</td>
-          <td>農産物の冷蔵倉庫<br><small>大切に保管する</small></td>
-          <td><span class="price-free">無料</span></td>
+          <td>農産物の冷蔵倉庫</td>
+          <td><span class="free">無料</span></td>
         </tr>
         <tr>
           <td><strong>🌐 GitHub Pages</strong></td>
           <td>ウェブ公開サービス</td>
-          <td>農産物直売所の店頭<br><small>みんなに見せる場所</small></td>
-          <td><span class="price-free">無料</span></td>
+          <td>農産物直売所の店頭</td>
+          <td><span class="free">無料</span></td>
         </tr>
         <tr>
           <td><strong>☁️ Supabase</strong></td>
           <td>データ共有クラウドDB</td>
-          <td>家族みんなの共同冷蔵庫<br><small>どこからでも使える</small></td>
-          <td><span class="price-free">無料（小規模）</span></td>
+          <td>家族みんなの共同冷蔵庫</td>
+          <td><span class="free">無料（小規模）</span></td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- 6. 重要URL -->
-  <h2 class="sec-title sec-blue">6️⃣ 大切なURL・アカウント一覧</h2>
-
-  <div class="card">
-    <table>
-      <thead>
-        <tr><th>サービス</th><th>URL・アカウント名</th><th>用途</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>📋 農業経費アプリ</td>
-          <td><small>https://maro-agri.github.io/apps/nogyou_kehi.html</small></td>
-          <td>経費・確定申告管理</td>
-        </tr>
-        <tr>
-          <td>📝 作業日誌アプリ</td>
-          <td><small>https://maro-agri.github.io/apps/sakugyou_nisshi.html</small></td>
-          <td>日々の作業記録（クラウド同期）</td>
-        </tr>
-        <tr>
-          <td>🌤 北栄天気アプリ</td>
-          <td><small>https://maro-agri.github.io/apps/kitaei_weather.html</small></td>
-          <td>地域の天気確認</td>
-        </tr>
-        <tr>
-          <td>🐙 GitHub</td>
-          <td>maro-agri</td>
-          <td>コード保管・公開</td>
-        </tr>
-        <tr>
-          <td>☁️ Supabase</td>
-          <td>rydqtqgeqobqqbeenbzt</td>
-          <td>作業日誌のデータ保存・同期</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="card" style="background:var(--green-l);border:2px solid var(--green);text-align:center;padding:14px">
+    <div style="font-size:.95rem;font-weight:800">💰 合計：月 約3,000〜5,000円だけ！</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-top:4px">
+      プログラマーに頼むと数十万〜数百万円かかる内容を、自分で作れる時代になりました。
+    </div>
   </div>
 
-  <!-- 7. 教えるポイント -->
-  <h2 class="sec-title sec-orange">7️⃣ 人に教えるときの 3つのポイント</h2>
+
+  <!-- ⑦ 教えるポイント -->
+  <div class="sec-head">
+    <div class="sec-num bg-red">7</div>
+    <div class="sec-label">人に教えるときの 3つのポイント</div>
+  </div>
 
   <div class="point-box">
-    <p>💡 <strong>「Claude AIは口だけ、Claude Codeは手も動く」</strong><br>
-    ふつうのAIはアドバイスするだけ。Claude Codeは実際にファイルを作ったり修正したりできる。</p>
-    <p>💡 <strong>「GitHubは保管＋公開、Supabaseはデータ共有」</strong><br>
-    GitHubはHTMLファイルを置いて誰でも見られるURLを作る場所。Supabaseは入力したデータをMac・iPhoneで共有する場所。</p>
-    <p>💡 <strong>「Chrome拡張は、ClaudeがChromeを操作するための橋」</strong><br>
-    Claude CodeがブラウザでSupabaseやGitHubの設定を自動でやるために必要な拡張機能。</p>
+    <div class="point">
+      <div class="point-icon">💡</div>
+      <div class="point-text">
+        <strong>「Claude AIは口だけ、Claude Codeは手も動く」</strong><br>
+        ふつうのAIはアドバイスするだけ。Claude Codeは実際にファイルを作ったり修正したりできる。
+      </div>
+    </div>
+    <div class="point">
+      <div class="point-icon">💡</div>
+      <div class="point-text">
+        <strong>「GitHubは保管＋公開、Supabaseはデータ共有」</strong><br>
+        GitHubはHTMLファイルを置いて誰でも見られるURLを作る場所。Supabaseは入力したデータをMac・iPhoneで共有する場所。
+      </div>
+    </div>
+    <div class="point">
+      <div class="point-icon">💡</div>
+      <div class="point-text">
+        <strong>「Chrome拡張は、ClaudeがChromeを操作するための橋」</strong><br>
+        Claude CodeがブラウザでSupabaseやGitHubの設定を自動でやるために必要な拡張機能。
+      </div>
+    </div>
   </div>
+
 
   <!-- まとめ -->
   <div class="summary">
-    <strong>🍇 まろさんがやったことの意味</strong>
+    <div style="font-size:2rem;margin-bottom:10px">🍇🌿🚀</div>
+    <strong>まろさんがやったことの意味</strong>
     <p>
       プログラマーが数十万円・数ヶ月かけてやることを、<br>
       Claude Codeと一緒にゼロから作り上げました。<br><br>
       85歳のおばあちゃんの知恵を、孫の剛志さんへ。<br>
-      デジタルで受け継ぐ、北栄農園の新しい農業の形。<br><br>
-      <span style="font-size:1.1rem">🌿 これが農業の産業革命です。</span>
+      デジタルで受け継ぐ、清水農園の新しい農業の形。<br><br>
+      <span style="font-size:1.15rem;font-weight:900">🌿 これが農業の産業革命です。</span>
     </p>
   </div>
 
-  <div style="text-align:center;margin-top:20px;font-size:.72rem;color:var(--muted)">
-    作成日：2026年4月　Claude Code × 北栄農園まろさん
+  <div class="footer">
+    作成：2026年4月　清水農園まろさん × Claude Code<br>
+    更新・印刷はいつでも → https://maro-agri.github.io/apps/claude_code_guide.html
   </div>
 
-</div>
-
+</div><!-- /wrap -->
 </body>
 </html>
