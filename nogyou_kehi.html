@@ -20,7 +20,9 @@
     header h1{font-size:1.05rem;font-weight:700}
     header .sub{font-size:.72rem;opacity:.85;margin-top:3px}
 
-    .tabs{display:flex;background:var(--green-d);overflow-x:auto;scrollbar-width:none}
+    .tabs-wrap{position:relative;background:var(--green-d)}
+    .tabs-wrap::after{content:'❯';position:absolute;right:0;top:0;bottom:0;width:28px;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:rgba(255,255,255,.7);background:linear-gradient(to right,transparent,var(--green-d) 60%);pointer-events:none}
+    .tabs{display:flex;background:transparent;overflow-x:auto;scrollbar-width:none}
     .tabs::-webkit-scrollbar{display:none}
     .tab-btn{flex-shrink:0;padding:10px 12px;font-size:.75rem;font-weight:600;color:rgba(255,255,255,.55);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
     .tab-btn.active{color:#fff;border-bottom-color:#F9CA24}
@@ -101,12 +103,14 @@
   <div class="sub">北栄町 葡萄農家 ／ 確定申告サポートツール</div>
 </header>
 
+<div class="tabs-wrap">
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('kehi',this)">📋 経費管理</button>
   <button class="tab-btn" onclick="switchTab('sim',this)">🧮 確定申告</button>
   <button class="tab-btn" onclick="switchTab('schedule',this)">📅 開業準備</button>
   <button class="tab-btn" onclick="switchTab('konky',this)">📄 按分根拠文</button>
   <button class="tab-btn" onclick="switchTab('itaku',this)">📝 業務委託</button>
+</div>
 </div>
 
 <!-- 経費管理 -->
