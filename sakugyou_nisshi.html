@@ -101,6 +101,8 @@
 </head>
 <body>
 
+<div id="syncStatus" style="display:none;position:fixed;top:0;left:0;right:0;padding:9px 16px;font-size:.8rem;font-weight:700;text-align:center;z-index:1000;transition:.3s"></div>
+
 <header>
   <h1>🌿 北栄農園 作業日誌</h1>
   <div class="sub">シャイン・ピオーネ・白葱 ／ 技術継承の記録</div>
@@ -280,289 +282,341 @@
 
 <script>
 
-// ---- データ ----
-let entries=[];
-let wisdoms=[];
-let nextId=1;
-let nextWId=1;
-let selectedWx='';
-let wisdomMonthFilter=0;
-let editingId=null; // null=新規, 数字=編集中
+// ==== Supabase設定 ====
+const SB_URL = 'https://rydqtqgeqobqqbeenbzt.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5ZHF0cWdlcW9icXFiZWVuYnp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NTIxNzcsImV4cCI6MjA5MTEyODE3N30.50MC1o0xVj1uZfFafi0xgRCYYYRLFbZlOPsk40j-Pzo';
 
-const CROP_COLORS={
+async function sb(path, method, body, extra) {
+  method = method || 'GET'; extra = extra || {};
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/' + path, {
+      method: method,
+      headers: Object.assign({
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      }, extra),
+      body: body ? JSON.stringify(body) : null
+    });
+    if (res.status === 204) return [];
+    const data = await res.json();
+    if (!res.ok) { console.error('SB error:', data); return null; }
+    return data;
+  } catch (e) { console.error('SB fetch error:', e); return null; }
+}
+
+function showSync(msg, ok) {
+  const el = document.getElementById('syncStatus');
+  el.textContent = msg;
+  el.style.background = ok ? '#E8F8EF' : '#FFF3CD';
+  el.style.color = ok ? '#1E8449' : '#856404';
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.style.display = 'none'; }, 3000);
+}
+
+// ==== データ ====
+let entries = [];
+let wisdoms = [];
+let selectedWx = '';
+let wisdomMonthFilter = 0;
+let editingId = null;
+
+const CROP_COLORS = {
   'シャイン':'#8E44AD','ピオーネ':'#C0392B','白葱':'#27AE60','全般':'#7D5A2F','全体':'#7D5A2F'
 };
-const MONTH_NAMES=['通年','1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const MONTH_NAMES = ['通年','1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
-// ---- 起動 ----
-function init(){
-  const d=localStorage.getItem('nisshi_entries');
-  if(d){const p=JSON.parse(d);entries=p.items||[];nextId=p.nextId||1;}
-  const w=localStorage.getItem('nisshi_wisdoms');
-  if(w){const p=JSON.parse(w);wisdoms=p.items||[];nextWId=p.nextId||1;}
-  // 今日の日付をセット
-  const today=new Date();
-  document.getElementById('rec_date').value=today.toISOString().slice(0,10);
+// ==== 起動 ====
+async function init() {
+  document.getElementById('rec_date').value = new Date().toISOString().slice(0,10);
+  showSync('☁️ データ読み込み中…', true);
+  const results = await Promise.all([
+    sb('nisshi_entries?order=date.desc'),
+    sb('nisshi_wisdoms?order=created_at.desc')
+  ]);
+  if (results[0] !== null) {
+    entries = results[0];
+    showSync('✅ クラウド同期完了！', true);
+  } else {
+    showSync('⚠️ オフラインモード', false);
+  }
+  if (results[1] !== null) wisdoms = results[1];
   renderList();
   renderWisdoms();
 }
 
-function saveEntries(){localStorage.setItem('nisshi_entries',JSON.stringify({items:entries,nextId}));}
-function saveWisdoms(){localStorage.setItem('nisshi_wisdoms',JSON.stringify({items:wisdoms,nextWId}));}
-
-// ---- 天気選択 ----
-function selWx(btn,wx){
-  document.querySelectorAll('.wx-btn').forEach(b=>b.classList.remove('sel'));
+// ==== 天気選択 ====
+function selWx(btn, wx) {
+  document.querySelectorAll('.wx-btn').forEach(function(b){ b.classList.remove('sel'); });
   btn.classList.add('sel');
-  selectedWx=wx;
+  selectedWx = wx;
 }
 
-// ---- チップ選択 ----
-function toggleChip(el){el.classList.toggle('sel');}
+// ==== チップ選択 ====
+function toggleChip(el) { el.classList.toggle('sel'); }
 
-function getChips(rowId){
-  return [...document.querySelectorAll(`#${rowId} .check-chip.sel`)].map(c=>c.textContent.trim());
+function getChips(rowId) {
+  return Array.from(document.querySelectorAll('#' + rowId + ' .check-chip.sel')).map(function(c){ return c.textContent.trim(); });
 }
 
-// ---- 記録保存 ----
-function saveEntry(){
-  const date=document.getElementById('rec_date').value;
-  const hi=document.getElementById('rec_hi').value;
-  const lo=document.getElementById('rec_lo').value;
-  const work=document.getElementById('rec_work').value.trim();
-  const materials=document.getElementById('rec_materials').value.trim();
-  const why=document.getElementById('rec_why').value.trim();
-  const tips=document.getElementById('rec_tips').value.trim();
-  const obs=document.getElementById('rec_obs').value.trim();
-  const wisdomText=document.getElementById('rec_wisdom').value.trim();
-  const wisdomCrops=getChips('wisdomCropRow');
-  const memo=document.getElementById('rec_memo').value.trim();
-  const workers=getChips('workerRow');
-  const areas=getChips('areaRow');
+// ==== 記録保存 ====
+async function saveEntry() {
+  const date = document.getElementById('rec_date').value;
+  const hi   = document.getElementById('rec_hi').value;
+  const lo   = document.getElementById('rec_lo').value;
+  const work = document.getElementById('rec_work').value.trim();
+  const materials = document.getElementById('rec_materials').value.trim();
+  const why  = document.getElementById('rec_why').value.trim();
+  const tips = document.getElementById('rec_tips').value.trim();
+  const obs  = document.getElementById('rec_obs').value.trim();
+  const wisdomText = document.getElementById('rec_wisdom').value.trim();
+  const wisdomCrops = getChips('wisdomCropRow');
+  const memo = document.getElementById('rec_memo').value.trim();
+  const workers = getChips('workerRow');
+  const areas   = getChips('areaRow');
 
-  if(!date){alert('日付を入力してください');return;}
-  if(!work){alert('作業内容を入力してください');return;}
+  if (!date) { alert('日付を入力してください'); return; }
+  if (!work) { alert('作業内容を入力してください'); return; }
 
-  if(editingId!==null){
-    // ---- 編集モード：既存を上書き ----
-    const idx=entries.findIndex(x=>x.id===editingId);
-    if(idx>=0){
-      entries[idx]={...entries[idx],date,weather:selectedWx,
-        temp_hi:hi,temp_lo:lo,workers,areas,work,materials,why,tips,obs,memo};
+  const payload = {
+    date: date, weather: selectedWx,
+    temp_hi: hi, temp_lo: lo,
+    workers: workers, areas: areas,
+    work: work, materials: materials,
+    why: why, tips: tips, obs: obs, memo: memo
+  };
+
+  document.getElementById('saveBtn').disabled = true;
+  showSync('💾 保存中…', true);
+
+  if (editingId !== null) {
+    // 編集モード
+    const result = await sb('nisshi_entries?id=eq.' + editingId, 'PATCH', payload);
+    if (result !== null) {
+      const idx = entries.findIndex(function(x){ return x.id === editingId; });
+      if (idx >= 0) entries[idx] = Object.assign({}, entries[idx], payload);
+      showSync('✅ 更新しました！', true);
+      alert('記録を更新しました！✏️');
+    } else {
+      showSync('❌ 更新に失敗', false);
+      document.getElementById('saveBtn').disabled = false;
+      alert('更新に失敗しました。インターネット接続を確認してください。');
+      return;
     }
-    editingId=null;
-    const btn=document.getElementById('saveBtn');
-    btn.textContent='💾 この記録を保存する';
-    btn.style.background='';
+    editingId = null;
+    const btn = document.getElementById('saveBtn');
+    btn.textContent = '💾 この記録を保存する';
+    btn.style.background = '';
     document.getElementById('editBanner').classList.remove('show');
-    alert('記録を更新しました！✏️');
   } else {
-    // ---- 新規保存 ----
-    const entry={
-      id:nextId++,date,weather:selectedWx,
-      temp_hi:hi,temp_lo:lo,
-      workers,areas,work,materials,why,tips,obs,memo
-    };
-    entries.unshift(entry);
-    alert('記録を保存しました！');
+    // 新規保存
+    const result = await sb('nisshi_entries', 'POST', payload);
+    if (result && result[0]) {
+      entries.unshift(result[0]);
+      showSync('✅ 保存しました！', true);
+      alert('記録を保存しました！');
+    } else {
+      showSync('❌ 保存に失敗', false);
+      document.getElementById('saveBtn').disabled = false;
+      alert('保存に失敗しました。インターネット接続を確認してください。');
+      return;
+    }
   }
-
-  saveEntries();
 
   // おばあちゃんの知恵があれば自動保存
-  if(wisdomText){
-    const month=new Date(date).getMonth()+1;
-    const crop=wisdomCrops.length>0?wisdomCrops.join('・'):'全般';
-    wisdoms.unshift({id:nextWId++,month,crop,text:wisdomText,date});
-    saveWisdoms();
+  if (wisdomText) {
+    const month = new Date(date).getMonth() + 1;
+    const crop = wisdomCrops.length > 0 ? wisdomCrops.join('・') : '全般';
+    const wRes = await sb('nisshi_wisdoms', 'POST', { month: month, crop: crop, text: wisdomText, date: date });
+    if (wRes && wRes[0]) wisdoms.unshift(wRes[0]);
   }
 
+  document.getElementById('saveBtn').disabled = false;
   clearForm();
   renderList();
   renderWisdoms();
 }
 
-function clearForm(){
-  document.getElementById('rec_work').value='';
-  document.getElementById('rec_materials').value='';
-  document.getElementById('rec_why').value='';
-  document.getElementById('rec_tips').value='';
-  document.getElementById('rec_obs').value='';
-  document.getElementById('rec_wisdom').value='';
-  document.getElementById('rec_memo').value='';
-  document.getElementById('rec_hi').value='';
-  document.getElementById('rec_lo').value='';
-  document.querySelectorAll('.wx-btn').forEach(b=>b.classList.remove('sel'));
-  document.querySelectorAll('.check-chip').forEach(c=>c.classList.remove('sel'));
-  selectedWx='';
-  editingId=null;
-  const btn=document.getElementById('saveBtn');
-  btn.textContent='💾 この記録を保存する';
-  btn.style.background='';
+function clearForm() {
+  ['rec_work','rec_materials','rec_why','rec_tips','rec_obs','rec_wisdom','rec_memo','rec_hi','rec_lo'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.querySelectorAll('.wx-btn').forEach(function(b){ b.classList.remove('sel'); });
+  document.querySelectorAll('.check-chip').forEach(function(c){ c.classList.remove('sel'); });
+  selectedWx = '';
+  editingId = null;
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = '💾 この記録を保存する';
+  btn.style.background = '';
   document.getElementById('editBanner').classList.remove('show');
-  // 日付は今日にリセット
-  document.getElementById('rec_date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('rec_date').value = new Date().toISOString().slice(0,10);
 }
 
-// ---- 一覧表示 ----
-function renderList(){
-  const el=document.getElementById('entryList');
-  const fm=document.getElementById('filterMonth').value; // "2026-04"
-  let filtered=entries;
-  if(fm) filtered=entries.filter(e=>e.date.startsWith(fm));
+// ==== 一覧表示 ====
+function renderList() {
+  const el = document.getElementById('entryList');
+  const fm = document.getElementById('filterMonth').value;
+  let filtered = entries;
+  if (fm) filtered = entries.filter(function(e){ return e.date.startsWith(fm); });
 
-  if(filtered.length===0){
-    el.innerHTML='<div class="empty">📝 まだ記録がありません</div>';return;
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="empty">📝 まだ記録がありません</div>'; return;
   }
 
-  el.innerHTML=filtered.map(e=>{
-    const wkStr=e.workers.length?e.workers.join('・'):'—';
-    const arStr=e.areas.length?e.areas.join('・'):'—';
-    const short=e.work.length>28?e.work.slice(0,28)+'…':e.work;
-    return `
-    <div class="entry-card">
-      <div class="entry-head" onclick="toggleEntry(${e.id})"
-        style="border-left-color:${e.areas[0]?CROP_COLORS[e.areas[0]]||'var(--green)':'var(--green)'}">
-        <div>
-          <div class="entry-date">${e.date}　${e.weather||''}</div>
-          <div class="entry-summary">${wkStr}　${arStr}　${e.temp_hi?e.temp_hi+'℃':''}</div>
-          <div class="entry-summary">${short}</div>
-        </div>
-        <span style="font-size:.8rem;color:var(--muted)">▼</span>
-      </div>
-      <div class="entry-body" id="eb_${e.id}">
-        <div class="entry-row"><span class="entry-label">担当　</span>${wkStr}</div>
-        <div class="entry-row"><span class="entry-label">エリア　</span>${arStr}</div>
-        <div class="entry-row"><span class="entry-label">天気・気温　</span>${e.weather||'—'}　最高${e.temp_hi||'—'}℃　最低${e.temp_lo||'—'}℃</div>
-        <div class="entry-row"><span class="entry-label">作業内容</span><br>${e.work.replace(/\n/g,'<br>')}</div>
-        ${e.materials?`<div class="entry-row"><span class="entry-label">農薬・資材　</span>${e.materials}</div>`:''}
-        ${(e.why||e.tips||e.obs)?`
-        <div style="background:#EBF5FB;border-radius:8px;padding:8px 10px;margin-top:6px;border-left:3px solid #2980B9">
-          <div style="font-size:.68rem;font-weight:800;color:#1a5276;margin-bottom:4px">③ 剛志へのポイント</div>
-          ${e.why?`<div class="entry-row"><span class="entry-label">なぜ今？　</span>${e.why.replace(/\n/g,'<br>')}</div>`:''}
-          ${e.tips?`<div class="entry-row"><span class="entry-label">コツ　</span>${e.tips.replace(/\n/g,'<br>')}</div>`:''}
-          ${e.obs?`<div class="entry-row"><span class="entry-label">生育観察　</span>${e.obs.replace(/\n/g,'<br>')}</div>`:''}
-        </div>`:''}
-        ${e.memo?`<div class="entry-row"><span class="entry-label">メモ　</span>${e.memo}</div>`:''}
-        <div style="margin-top:8px">
-          <button class="entry-edit" onclick="editEntry(${e.id})">✏️ 編集・追記</button>
-          <button class="entry-del" onclick="delEntry(${e.id})">🗑 削除</button>
-        </div>
-      </div>
-    </div>`;
+  el.innerHTML = filtered.map(function(e) {
+    const wkStr = e.workers && e.workers.length ? e.workers.join('・') : '—';
+    const arStr = e.areas   && e.areas.length   ? e.areas.join('・')   : '—';
+    const short = e.work.length > 28 ? e.work.slice(0,28) + '…' : e.work;
+    const borderColor = e.areas && e.areas[0] ? (CROP_COLORS[e.areas[0]] || 'var(--green)') : 'var(--green)';
+    return '<div class="entry-card">' +
+      '<div class="entry-head" onclick="toggleEntry(' + e.id + ')" style="border-left-color:' + borderColor + '">' +
+        '<div>' +
+          '<div class="entry-date">' + e.date + '　' + (e.weather||'') + '</div>' +
+          '<div class="entry-summary">' + wkStr + '　' + arStr + '　' + (e.temp_hi ? e.temp_hi+'℃' : '') + '</div>' +
+          '<div class="entry-summary">' + short + '</div>' +
+        '</div>' +
+        '<span style="font-size:.8rem;color:var(--muted)">▼</span>' +
+      '</div>' +
+      '<div class="entry-body" id="eb_' + e.id + '">' +
+        '<div class="entry-row"><span class="entry-label">担当　</span>' + wkStr + '</div>' +
+        '<div class="entry-row"><span class="entry-label">エリア　</span>' + arStr + '</div>' +
+        '<div class="entry-row"><span class="entry-label">天気・気温　</span>' + (e.weather||'—') + '　最高' + (e.temp_hi||'—') + '℃　最低' + (e.temp_lo||'—') + '℃</div>' +
+        '<div class="entry-row"><span class="entry-label">作業内容</span><br>' + e.work.replace(/\n/g,'<br>') + '</div>' +
+        (e.materials ? '<div class="entry-row"><span class="entry-label">農薬・資材　</span>' + e.materials + '</div>' : '') +
+        ((e.why||e.tips||e.obs) ? '<div style="background:#EBF5FB;border-radius:8px;padding:8px 10px;margin-top:6px;border-left:3px solid #2980B9"><div style="font-size:.68rem;font-weight:800;color:#1a5276;margin-bottom:4px">③ 剛志へのポイント</div>' +
+          (e.why ? '<div class="entry-row"><span class="entry-label">なぜ今？　</span>' + e.why.replace(/\n/g,'<br>') + '</div>' : '') +
+          (e.tips ? '<div class="entry-row"><span class="entry-label">コツ　</span>' + e.tips.replace(/\n/g,'<br>') + '</div>' : '') +
+          (e.obs  ? '<div class="entry-row"><span class="entry-label">生育観察　</span>' + e.obs.replace(/\n/g,'<br>') + '</div>' : '') +
+        '</div>' : '') +
+        (e.memo ? '<div class="entry-row"><span class="entry-label">メモ　</span>' + e.memo + '</div>' : '') +
+        '<div style="margin-top:8px">' +
+          '<button class="entry-edit" onclick="editEntry(' + e.id + ')">✏️ 編集・追記</button>' +
+          '<button class="entry-del"  onclick="delEntry('  + e.id + ')">🗑 削除</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
-function toggleEntry(id){
-  const el=document.getElementById('eb_'+id);
-  if(el) el.classList.toggle('open');
+function toggleEntry(id) {
+  const el = document.getElementById('eb_' + id);
+  if (el) el.classList.toggle('open');
 }
 
-function delEntry(id){
-  if(!confirm('この記録を削除しますか？'))return;
-  entries=entries.filter(e=>e.id!==id);
-  saveEntries();renderList();
+async function delEntry(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  showSync('🗑 削除中…', true);
+  await sb('nisshi_entries?id=eq.' + id, 'DELETE');
+  entries = entries.filter(function(e){ return e.id !== id; });
+  showSync('✅ 削除しました', true);
+  renderList();
 }
 
-function editEntry(id){
-  const e=entries.find(x=>x.id===id);
-  if(!e) return;
-  editingId=id;
+function editEntry(id) {
+  const e = entries.find(function(x){ return x.id === id; });
+  if (!e) return;
+  editingId = id;
 
-  // 日付・天気・気温
-  document.getElementById('rec_date').value=e.date;
-  document.querySelectorAll('.wx-btn').forEach(b=>{
+  document.getElementById('rec_date').value = e.date;
+  document.querySelectorAll('.wx-btn').forEach(function(b){
     b.classList.remove('sel');
-    if(b.textContent.trim()===e.weather) b.classList.add('sel');
+    if (b.textContent.trim() === e.weather) b.classList.add('sel');
   });
-  selectedWx=e.weather||'';
-  document.getElementById('rec_hi').value=e.temp_hi||'';
-  document.getElementById('rec_lo').value=e.temp_lo||'';
+  selectedWx = e.weather || '';
+  document.getElementById('rec_hi').value = e.temp_hi || '';
+  document.getElementById('rec_lo').value = e.temp_lo || '';
 
-  // 担当者チップ
-  document.querySelectorAll('#workerRow .check-chip').forEach(c=>{
-    c.classList.toggle('sel',(e.workers||[]).includes(c.textContent.trim()));
+  document.querySelectorAll('#workerRow .check-chip').forEach(function(c){
+    c.classList.toggle('sel', (e.workers||[]).includes(c.textContent.trim()));
   });
-  // エリアチップ
-  document.querySelectorAll('#areaRow .check-chip').forEach(c=>{
-    c.classList.toggle('sel',(e.areas||[]).includes(c.textContent.trim()));
+  document.querySelectorAll('#areaRow .check-chip').forEach(function(c){
+    c.classList.toggle('sel', (e.areas||[]).includes(c.textContent.trim()));
   });
 
-  // テキストエリア
-  document.getElementById('rec_work').value=e.work||'';
-  document.getElementById('rec_materials').value=e.materials||'';
-  document.getElementById('rec_why').value=e.why||'';
-  document.getElementById('rec_tips').value=e.tips||'';
-  document.getElementById('rec_obs').value=e.obs||'';
-  document.getElementById('rec_memo').value=e.memo||'';
-  document.getElementById('rec_wisdom').value='';
+  document.getElementById('rec_work').value      = e.work      || '';
+  document.getElementById('rec_materials').value = e.materials || '';
+  document.getElementById('rec_why').value       = e.why       || '';
+  document.getElementById('rec_tips').value      = e.tips      || '';
+  document.getElementById('rec_obs').value       = e.obs       || '';
+  document.getElementById('rec_memo').value      = e.memo      || '';
+  document.getElementById('rec_wisdom').value    = '';
 
-  // ボタン・バナーを編集モードに
-  const btn=document.getElementById('saveBtn');
-  btn.textContent='💾 この記録を更新する';
-  btn.style.background='linear-gradient(135deg,#1a5276,#2980B9)';
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = '💾 この記録を更新する';
+  btn.style.background = 'linear-gradient(135deg,#1a5276,#2980B9)';
   document.getElementById('editBanner').classList.add('show');
 
-  // 今日の記録タブに切り替えてトップへ
-  switchTab('rec',document.querySelectorAll('.tab-btn')[0]);
-  window.scrollTo({top:0,behavior:'smooth'});
+  switchTab('rec', document.querySelectorAll('.tab-btn')[0]);
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
-// ---- おばあちゃんの知恵袋 ----
-function addWisdom(){
-  const text=document.getElementById('w_text').value.trim();
-  if(!text){alert('知恵・言葉を入力してください');return;}
-  const month=+document.getElementById('w_month').value;
-  const crop=document.getElementById('w_crop').value;
-  const date=new Date().toISOString().slice(0,10);
-  wisdoms.unshift({id:nextWId++,month,crop,text,date});
-  saveWisdoms();
-  document.getElementById('w_text').value='';
-  renderWisdoms();
-  alert('知恵を保存しました！🌸');
+// ==== おばあちゃんの知恵袋 ====
+async function addWisdom() {
+  const text = document.getElementById('w_text').value.trim();
+  if (!text) { alert('知恵・言葉を入力してください'); return; }
+  const month = +document.getElementById('w_month').value;
+  const crop  = document.getElementById('w_crop').value;
+  const date  = new Date().toISOString().slice(0,10);
+
+  showSync('💾 保存中…', true);
+  const result = await sb('nisshi_wisdoms', 'POST', { month: month, crop: crop, text: text, date: date });
+  if (result && result[0]) {
+    wisdoms.unshift(result[0]);
+    showSync('✅ 保存しました！', true);
+    document.getElementById('w_text').value = '';
+    renderWisdoms();
+    alert('知恵を保存しました！🌸');
+  } else {
+    showSync('❌ 保存に失敗', false);
+    alert('保存に失敗しました。インターネット接続を確認してください。');
+  }
 }
 
-function filterWisdom(m,btn){
-  wisdomMonthFilter=m;
-  document.querySelectorAll('.mf-btn').forEach(b=>b.classList.remove('sel'));
+function filterWisdom(m, btn) {
+  wisdomMonthFilter = m;
+  document.querySelectorAll('.mf-btn').forEach(function(b){ b.classList.remove('sel'); });
   btn.classList.add('sel');
   renderWisdoms();
 }
 
-function renderWisdoms(){
-  const el=document.getElementById('wisdomList');
-  let filtered=wisdoms;
-  if(wisdomMonthFilter>0) filtered=wisdoms.filter(w=>w.month===wisdomMonthFilter||w.month===0);
-  if(filtered.length===0){
-    el.innerHTML='<div class="empty">🌸 まだおばあちゃんの知恵が登録されていません<br><small>作業日誌を書くか、上のフォームから追加してください</small></div>';
+function renderWisdoms() {
+  const el = document.getElementById('wisdomList');
+  let filtered = wisdoms;
+  if (wisdomMonthFilter > 0) filtered = wisdoms.filter(function(w){ return w.month === wisdomMonthFilter || w.month === 0; });
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="empty">🌸 まだおばあちゃんの知恵が登録されていません<br><small>作業日誌を書くか、上のフォームから追加してください</small></div>';
     return;
   }
-  el.innerHTML=filtered.map(w=>`
-    <div class="wisdom-card">
-      <div>
-        <span class="wisdom-month">${w.month?MONTH_NAMES[w.month]:'通年'}</span>
-        <span class="wisdom-crop" style="background:${CROP_COLORS[w.crop]||'#888'}">${w.crop}</span>
-      </div>
-      <div class="wisdom-text">「${w.text}」</div>
-      <div class="wisdom-date">記録日：${w.date}</div>
-      <button class="wisdom-del" onclick="delWisdom(${w.id})">削除</button>
-    </div>`).join('');
+  el.innerHTML = filtered.map(function(w) {
+    return '<div class="wisdom-card">' +
+      '<div>' +
+        '<span class="wisdom-month">' + (w.month ? MONTH_NAMES[w.month] : '通年') + '</span>' +
+        '<span class="wisdom-crop" style="background:' + (CROP_COLORS[w.crop]||'#888') + '">' + w.crop + '</span>' +
+      '</div>' +
+      '<div class="wisdom-text">「' + w.text + '」</div>' +
+      '<div class="wisdom-date">記録日：' + w.date + '</div>' +
+      '<button class="wisdom-del" onclick="delWisdom(' + w.id + ')">削除</button>' +
+    '</div>';
+  }).join('');
 }
 
-function delWisdom(id){
-  if(!confirm('削除しますか？'))return;
-  wisdoms=wisdoms.filter(w=>w.id!==id);
-  saveWisdoms();renderWisdoms();
+async function delWisdom(id) {
+  if (!confirm('削除しますか？')) return;
+  await sb('nisshi_wisdoms?id=eq.' + id, 'DELETE');
+  wisdoms = wisdoms.filter(function(w){ return w.id !== id; });
+  renderWisdoms();
 }
 
-// ---- タブ ----
-function switchTab(name,btn){
-  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
+// ==== タブ ====
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(function(e){ e.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('tab-' + name).classList.add('active');
   btn.classList.add('active');
-  if(name==='list') renderList();
-  if(name==='wisdom') renderWisdoms();
+  if (name === 'list')   renderList();
+  if (name === 'wisdom') renderWisdoms();
 }
 
 init();
