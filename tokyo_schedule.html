@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>✈️ 東京旅行スケジュール</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'Hiragino Sans', sans-serif;
+  background: #f0f4f8;
+  color: #1a1a2e;
+  padding-bottom: 50px;
+}
+
+/* ヘッダー */
+.header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+  color: white;
+  text-align: center;
+  padding: 24px 16px 20px;
+}
+.header h1 { font-size: 20px; font-weight: 900; line-height: 1.4; }
+.header p { font-size: 13px; opacity: 0.75; margin-top: 6px; }
+.flight-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.flight-badge {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: left;
+}
+.flight-badge strong { color: #ffd60a; font-size: 14px; }
+
+/* セクション共通 */
+.section {
+  margin: 12px;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+}
+.sec-head {
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+}
+.sec-head h2 { font-size: 17px; font-weight: 900; flex: 1; }
+.sec-head .badge {
+  font-size: 11px; font-weight: 800;
+  background: rgba(255,255,255,0.25);
+  padding: 3px 9px; border-radius: 20px;
+}
+
+/* DAY色 */
+.day1 .sec-head { background: linear-gradient(90deg,#e76f51,#f4a261); }
+.day2 .sec-head { background: linear-gradient(90deg,#2d6a4f,#52b788); }
+.route  .sec-head { background: linear-gradient(90deg,#0077b6,#00b4d8); }
+.cost   .sec-head { background: linear-gradient(90deg,#5a189a,#9b5de5); }
+.check  .sec-head { background: linear-gradient(90deg,#333,#555); }
+
+/* タイムラインテーブル */
+.tl-table { background: white; width: 100%; border-collapse: collapse; }
+.tl-table tr { border-bottom: 1px solid #f0f0f0; }
+.tl-table tr:last-child { border-bottom: none; }
+.tl-table td { padding: 11px 12px; vertical-align: top; }
+.tl-table .time-col {
+  width: 68px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #0077b6;
+  white-space: nowrap;
+  padding-top: 12px;
+}
+.tl-table .icon-col {
+  width: 30px;
+  font-size: 20px;
+  padding-top: 10px;
+  text-align: center;
+}
+.tl-table .body-col { font-size: 13px; line-height: 1.7; }
+.tl-table .ttl {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 2px;
+}
+.tl-table .sub { color: #555; font-size: 12px; }
+.tl-table .sub b { color: #d62828; }
+.warn-row td { background: #fff8e1; }
+.warn-row .ttl { color: #c62828; }
+
+/* タグ */
+.tag {
+  display: inline-block;
+  font-size: 11px; font-weight: 800;
+  padding: 2px 8px; border-radius: 20px;
+  margin: 2px 2px 0 0;
+}
+.tag-min  { background: #e0f0ff; color: #0077b6; }
+.tag-yen  { background: #fff3e0; color: #d4a017; }
+.tag-tip  { background: #e8f8e8; color: #2d6a4f; }
+.tag-warn { background: #fdecea; color: #c62828; }
+
+/* 移動表 */
+.route-table { background: white; width: 100%; border-collapse: collapse; }
+.route-table th {
+  background: #f0f4f8; padding: 9px 10px;
+  font-size: 12px; font-weight: 800; text-align: left;
+  border-bottom: 2px solid #dde3ea;
+}
+.route-table td { padding: 9px 10px; font-size: 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+.route-table tr:last-child td { border-bottom: none; }
+.route-table .yen { color: #d4a017; font-weight: 800; }
+
+/* 費用表 */
+.cost-table { background: white; width: 100%; border-collapse: collapse; }
+.cost-table td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+.cost-table tr:last-child td { border-bottom: none; }
+.cost-table .sum-row td { background: #1a1a2e; color: white; font-weight: 900; font-size: 15px; }
+.cost-table .sum-row .amt { color: #ffd60a; font-size: 18px; }
+.cost-table .amt { text-align: right; font-weight: 700; color: #d4a017; }
+.suica-note {
+  background: linear-gradient(135deg,#00b4d8,#0077b6);
+  color: white; padding: 12px 14px;
+  font-size: 13px; line-height: 1.8;
+}
+.suica-note strong { font-size: 16px; color: #ffd60a; }
+
+/* チェックリスト */
+.check-section { background: white; }
+.check-group { padding: 10px 14px 6px; border-bottom: 1px solid #f0f0f0; }
+.check-group:last-child { border-bottom: none; }
+.check-group h4 {
+  font-size: 13px; font-weight: 900; color: #555;
+  margin-bottom: 8px; padding-bottom: 4px;
+  border-bottom: 1px dashed #ddd;
+}
+.check-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 5px 0; font-size: 13px;
+  border-bottom: 1px solid #f8f8f8;
+}
+.check-item:last-child { border-bottom: none; }
+.check-box {
+  width: 20px; height: 20px; border-radius: 5px;
+  border: 2px solid #ccc; flex-shrink: 0; margin-top: 1px;
+}
+
+/* グッズTips */
+.goods-tips {
+  background: #fff8e1;
+  border-left: 4px solid #ffc107;
+  border-radius: 0 12px 12px 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #5a4000;
+  line-height: 1.8;
+  margin: 8px 0 0;
+}
+.goods-tips strong { color: #c62828; }
+
+/* フッター */
+footer {
+  text-align: center; font-size: 11px; color: #aaa;
+  padding: 20px 12px 0; line-height: 1.9;
+}
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div class="header">
+  <h1>✈️ 東京旅行スケジュール<br>嵐 東京ドーム 2026</h1>
+  <p>5月31日（日）〜 6月1日（月）　鳥取発 1泊2日</p>
+  <div class="flight-row">
+    <div class="flight-badge">
+      ▶ <strong>NH294</strong> 往路<br>
+      鳥取 08:55 → 羽田T2 10:05
+    </div>
+    <div class="flight-badge">
+      ◀ <strong>NH297</strong> 復路<br>
+      羽田T2 16:40 → 鳥取 18:00
+    </div>
+  </div>
+</div>
+
+<!-- 移動ルート早見表 -->
+<div class="section route">
+  <div class="sec-head">
+    <span style="font-size:22px">🗺️</span>
+    <h2>移動ルート早見表</h2>
+  </div>
+  <table class="route-table">
+    <tr>
+      <th>区間</th><th>手段</th><th>時間</th><th>料金</th>
+    </tr>
+    <tr>
+      <td>羽田T2 → 浜松町</td>
+      <td>🚝 東京モノレール（直通）</td>
+      <td>18分</td>
+      <td class="yen">519円</td>
+    </tr>
+    <tr>
+      <td>浜松町 → 水道橋</td>
+      <td>🟢 山手線→🟠 総武線（秋葉原乗換）</td>
+      <td>約25分</td>
+      <td class="yen">178円</td>
+    </tr>
+    <tr>
+      <td>水道橋 → 新橋</td>
+      <td>🟠 JR総武線（秋葉原乗換）</td>
+      <td>約15分</td>
+      <td class="yen">178円</td>
+    </tr>
+    <tr>
+      <td>飯田橋 → 大門<br><small>（帰り・混雑回避）</small></td>
+      <td>🔵 都営大江戸線（直通）</td>
+      <td>約14分</td>
+      <td class="yen">240円</td>
+    </tr>
+    <tr>
+      <td>浜松町 → 新宿</td>
+      <td>🟢 山手線 内回り（品川・渋谷方面）</td>
+      <td>約23分</td>
+      <td class="yen">200円</td>
+    </tr>
+    <tr>
+      <td>新宿 → 浜松町</td>
+      <td>🟢 山手線 内回り（品川・渋谷方面）</td>
+      <td>約23分</td>
+      <td class="yen">200円</td>
+    </tr>
+    <tr>
+      <td>浜松町 → 羽田T2</td>
+      <td>🚝 東京モノレール（直通）</td>
+      <td>18分</td>
+      <td class="yen">519円</td>
+    </tr>
+  </table>
+</div>
+
+<!-- DAY 1 -->
+<div class="section day1">
+  <div class="sec-head">
+    <span style="font-size:22px">✈️</span>
+    <h2>DAY 1 ── 5月31日（日）</h2>
+    <span class="badge">コンサート当日</span>
+  </div>
+  <table class="tl-table">
+
+    <tr>
+      <td class="time-col">08:55</td>
+      <td class="icon-col">✈️</td>
+      <td class="body-col">
+        <div class="ttl">鳥取空港 出発</div>
+        <div class="sub">NH294 搭乗 ／ 手荷物は機内持込推奨（グッズで荷物が増えるため）</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">10:05</td>
+      <td class="icon-col">🛬</td>
+      <td class="body-col">
+        <div class="ttl">羽田T2 着</div>
+        <div class="sub">手荷物受取 → モノレール乗り場へ（T2ビル内・案内板に従う）</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">10:10</td>
+      <td class="icon-col">🚝</td>
+      <td class="body-col">
+        <div class="ttl">東京モノレール 乗車</div>
+        <div class="sub">羽田空港第2ビル駅 → 浜松町駅</div>
+        <span class="tag tag-min">18分</span>
+        <span class="tag tag-yen">519円</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">10:30</td>
+      <td class="icon-col">🏨</td>
+      <td class="body-col">
+        <div class="ttl">ホテル到着・荷物預け</div>
+        <div class="sub">京急EXイン浜松町・大門<br>JR浜松町「北口」徒歩5分 ／ 大門「A5出口」徒歩1分<br>チェックインは夜でOK。荷物だけ預かってもらう</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">11:00</td>
+      <td class="icon-col">🚉</td>
+      <td class="body-col">
+        <div class="ttl">浜松町 → 水道橋（東京ドームへ）</div>
+        <div class="sub">🟢 山手線「上野・東京」方面 → 秋葉原乗換<br>🟠 総武線「新宿・三鷹」方面 → 水道橋 下車</div>
+        <span class="tag tag-min">約25分</span>
+        <span class="tag tag-yen">178円</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">11:30〜</td>
+      <td class="icon-col">🎽</td>
+      <td class="body-col">
+        <div class="ttl">東京ドーム グッズ購入 🔴最優先！</div>
+        <div class="sub">水道橋駅 東口から徒歩5分</div>
+        <div class="goods-tips">
+          ⏰ <strong>予約時間は「12:00〜13:00」枠が安全！</strong><br>
+          10:05着→移動→荷物預けで11:30頃ドーム着。<br>
+          余裕を見て <strong>12:00〜</strong> の枠を予約しておくと◎<br>
+          💴 <b>現金を多めに用意（2万円以上推奨）</b><br>
+          👒 帽子・飲み物・日焼け止め必須
+        </div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">〜14:00</td>
+      <td class="icon-col">🛍️</td>
+      <td class="body-col">
+        <div class="ttl">グッズ購入 完了</div>
+        <div class="sub">人気グッズは売切れ注意 ／ 列の状況により前後あり</div>
+        <span class="tag tag-tip">ここから気持ちが楽になる！</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">14:10</td>
+      <td class="icon-col">🚉</td>
+      <td class="body-col">
+        <div class="ttl">水道橋 → 新橋（リベシティオフィスへ）</div>
+        <div class="sub">🟠 総武線「千葉・津田沼」方面 → 秋葉原乗換<br>🟢 山手線「品川・渋谷」方面 → 新橋 下車</div>
+        <span class="tag tag-min">約15分</span>
+        <span class="tag tag-yen">178円</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">14:30〜<br>15:30</td>
+      <td class="icon-col">💼</td>
+      <td class="body-col">
+        <div class="ttl">リベシティ 新橋オフィス</div>
+        <div class="sub">新橋駅「烏森口」徒歩2分<br>KDX新橋駅前ビル（港区新橋1-9-5）<br>約1時間滞在</div>
+        <span class="tag tag-tip">グッズ後でリラックスして訪問！</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">15:30〜<br>16:00</td>
+      <td class="icon-col">🍱</td>
+      <td class="body-col">
+        <div class="ttl">昼食・休憩</div>
+        <div class="sub">新橋 or 移動しながら東京ドームシティ「ラクーア」周辺<br>開演前にしっかり食べておこう！</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">16:00〜<br>16:30</td>
+      <td class="icon-col">🚉</td>
+      <td class="body-col">
+        <div class="ttl">新橋 → 水道橋（東京ドームへ戻る）</div>
+        <div class="sub">🟢 山手線「上野・東京」方面 → 秋葉原乗換<br>🟠 総武線「新宿・三鷹」方面 → 水道橋 下車</div>
+        <span class="tag tag-min">約15分</span>
+        <span class="tag tag-yen">178円</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">16:30頃</td>
+      <td class="icon-col">🎪</td>
+      <td class="body-col">
+        <div class="ttl">東京ドーム 入場</div>
+        <div class="sub">チケットのゲート番号を確認して入場<br>席まで広いので早めに！開演まで雰囲気を楽しもう</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">18:00</td>
+      <td class="icon-col">🎤</td>
+      <td class="body-col">
+        <div class="ttl" style="color:#e76f51;font-size:17px;">コンサート 開演！🎵</div>
+        <div class="sub">嵐 東京ドーム公演 スタート</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">21〜22時頃</td>
+      <td class="icon-col">🌙</td>
+      <td class="body-col">
+        <div class="ttl">終演（予想）</div>
+        <div class="sub">終演時間は公演によって前後します</div>
+      </td>
+    </tr>
+
+    <tr class="warn-row">
+      <td class="time-col">終演後</td>
+      <td class="icon-col">🚶</td>
+      <td class="body-col">
+        <div class="ttl">⚠️ 飯田橋まで徒歩15分！</div>
+        <div class="sub"><b>水道橋は大混雑・入場規制で1時間超もあり！</b><br>飯田橋まで歩いて混雑を回避する</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">22:20頃</td>
+      <td class="icon-col">🔵</td>
+      <td class="body-col">
+        <div class="ttl">飯田橋 → 大門（都営大江戸線）</div>
+        <div class="sub">直通 約14分</div>
+        <span class="tag tag-yen">240円</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">22:40頃</td>
+      <td class="icon-col">🏨</td>
+      <td class="body-col">
+        <div class="ttl">ホテル到着・チェックイン</div>
+        <div class="sub">大門A5出口 徒歩1分 ／ お疲れさまでした！</div>
+      </td>
+    </tr>
+
+  </table>
+</div>
+
+<!-- DAY 2 -->
+<div class="section day2">
+  <div class="sec-head">
+    <span style="font-size:22px">🏢</span>
+    <h2>DAY 2 ── 6月1日（月）</h2>
+    <span class="badge">帰宅日</span>
+  </div>
+  <table class="tl-table">
+
+    <tr>
+      <td class="time-col">〜10:00</td>
+      <td class="icon-col">☀️</td>
+      <td class="body-col">
+        <div class="ttl">起床・朝食</div>
+        <div class="sub">ホテル朝食 or 近くのカフェ ／ コンサートの余韻に浸りながら♪</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">10:00</td>
+      <td class="icon-col">🏨</td>
+      <td class="body-col">
+        <div class="ttl">チェックアウト</div>
+        <div class="sub">荷物はホテルに預けておく（帰り道に受け取る）<br>または新宿駅コインロッカー（300〜700円）</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">10:15</td>
+      <td class="icon-col">🚉</td>
+      <td class="body-col">
+        <div class="ttl">浜松町 → 新宿</div>
+        <div class="sub">🟢 山手線 内回り「<b>品川・渋谷</b>」方面 ／ 「西口改札」下車</div>
+        <span class="tag tag-min">約23分</span>
+        <span class="tag tag-yen">200円</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">10:40</td>
+      <td class="icon-col">🚶</td>
+      <td class="body-col">
+        <div class="ttl">新宿西口 到着</div>
+        <div class="sub">西口改札を出てすぐ</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">11:00〜<br>14:00</td>
+      <td class="icon-col">💼</td>
+      <td class="body-col">
+        <div class="ttl">リベシティ 新宿西口オフィス</div>
+        <div class="sub">約3時間滞在 ／ 住所は会員ログイン後に予約フォームで確認</div>
+        <span class="tag tag-tip">たっぷり3時間！</span>
+      </td>
+    </tr>
+
+    <tr class="warn-row">
+      <td class="time-col">⏰ 14:00</td>
+      <td class="icon-col">🚨</td>
+      <td class="body-col">
+        <div class="ttl">新宿を出発！（絶対）</div>
+        <div class="sub"><b>ここを過ぎると飛行機に間に合わない可能性あり！</b></div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">14:00</td>
+      <td class="icon-col">🚉</td>
+      <td class="body-col">
+        <div class="ttl">新宿 → 浜松町</div>
+        <div class="sub">🟢 山手線 内回り「<b>品川・渋谷</b>」方面</div>
+        <span class="tag tag-min">約23分</span>
+        <span class="tag tag-yen">200円</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">14:25</td>
+      <td class="icon-col">🏨</td>
+      <td class="body-col">
+        <div class="ttl">ホテルで荷物を受け取る</div>
+        <div class="sub">大門A5出口 徒歩1分 ／ 素早く受け取る</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">14:35</td>
+      <td class="icon-col">🚝</td>
+      <td class="body-col">
+        <div class="ttl">東京モノレール 乗車</div>
+        <div class="sub">浜松町駅 → 羽田空港第2ビル駅</div>
+        <span class="tag tag-min">18分</span>
+        <span class="tag tag-yen">519円</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">14:55</td>
+      <td class="icon-col">✈️</td>
+      <td class="body-col">
+        <div class="ttl">羽田T2 到着</div>
+        <div class="sub">出発まで 約1時間45分 ／ 余裕あり！</div>
+        <span class="tag tag-tip">お土産もここで買える</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">〜16:10</td>
+      <td class="icon-col">🛡️</td>
+      <td class="body-col">
+        <div class="ttl">搭乗手続き・保安検査・ゲートへ</div>
+        <div class="sub">出発30分前（16:10）までにゲート通過 ／ お土産はここで！</div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="time-col">16:40</td>
+      <td class="icon-col">✈️</td>
+      <td class="body-col">
+        <div class="ttl" style="color:#2d6a4f;font-size:16px;">羽田出発 → 鳥取へ！</div>
+        <div class="sub">NH297 搭乗 ／ 18:00 鳥取着</div>
+      </td>
+    </tr>
+
+  </table>
+</div>
+
+<!-- 交通費 -->
+<div class="section cost">
+  <div class="sec-head">
+    <span style="font-size:22px">💰</span>
+    <h2>交通費 合計</h2>
+  </div>
+  <table class="cost-table">
+    <tr><td>🚝 羽田T2 → 浜松町（モノレール）</td><td class="amt">519円</td></tr>
+    <tr><td>🚉 浜松町 → 水道橋</td><td class="amt">178円</td></tr>
+    <tr><td>🚉 水道橋 → 新橋（リベシティ往復含む）</td><td class="amt">178円</td></tr>
+    <tr><td>🚉 新橋 → 水道橋（コンサートへ戻る）</td><td class="amt">178円</td></tr>
+    <tr><td>🔵 飯田橋 → 大門（帰り・混雑回避）</td><td class="amt">240円</td></tr>
+    <tr><td>🚉 浜松町 → 新宿（DAY2）</td><td class="amt">200円</td></tr>
+    <tr><td>🚉 新宿 → 浜松町</td><td class="amt">200円</td></tr>
+    <tr><td>🚝 浜松町 → 羽田T2（モノレール）</td><td class="amt">519円</td></tr>
+    <tr class="sum-row"><td><strong>合計</strong></td><td class="amt">約 2,212円</td></tr>
+  </table>
+  <div class="suica-note">
+    💳 <strong>Suica / ICOCAチャージ推奨：3,000円（余裕なら5,000円）</strong><br>
+    ✅ 鳥取のICOCAカードもそのまま使えます<br>
+    ✅ 全路線（モノレール・JR・都営）Suica対応
+  </div>
+</div>
+
+<!-- チェックリスト -->
+<div class="section check">
+  <div class="sec-head">
+    <span style="font-size:22px">✅</span>
+    <h2>持ち物チェックリスト</h2>
+  </div>
+  <div class="check-section">
+    <div class="check-group">
+      <h4>📋 必携品</h4>
+      <div class="check-item"><div class="check-box"></div><span>✈️ 航空券（eチケット・ANAアプリ＋スクショ保存）</span></div>
+      <div class="check-item"><div class="check-box"></div><span>🆔 身分証明書</span></div>
+      <div class="check-item"><div class="check-box"></div><span>🎫 コンサートチケット（スクショ保存・QRコード表示確認）</span></div>
+      <div class="check-item"><div class="check-box"></div><span>💳 Suica / ICOCAカード（3,000〜5,000円チャージ済）</span></div>
+      <div class="check-item"><div class="check-box"></div><span>💴 現金（グッズ代・食事代。20,000円以上推奨）</span></div>
+      <div class="check-item"><div class="check-box"></div><span>📱 スマホ＋充電器＋モバイルバッテリー（フル充電）</span></div>
+      <div class="check-item"><div class="check-box"></div><span>💊 常備薬（頭痛薬・酔い止めなど）</span></div>
+    </div>
+    <div class="check-group">
+      <h4>🎽 グッズ並び対策</h4>
+      <div class="check-item"><div class="check-box"></div><span>🧴 日焼け止め・帽子（屋外で長時間並ぶ）</span></div>
+      <div class="check-item"><div class="check-box"></div><span>💧 水・飲み物（必須！）</span></div>
+      <div class="check-item"><div class="check-box"></div><span>🌂 折りたたみ傘（天気予報を確認）</span></div>
+    </div>
+    <div class="check-group">
+      <h4>📱 前日までにやること（iPhone）</h4>
+      <div class="check-item"><div class="check-box"></div><span>eチケットをスクショ保存（写真アプリへ）</span></div>
+      <div class="check-item"><div class="check-box"></div><span>コンサートチケットのQRをスクショ保存</span></div>
+      <div class="check-item"><div class="check-box"></div><span>東京ドーム座席図をスクショ保存</span></div>
+      <div class="check-item"><div class="check-box"></div><span>ホテル地図をGoogleマップでオフライン保存</span></div>
+      <div class="check-item"><div class="check-box"></div><span>Suica / ICOCAに3,000〜5,000円チャージ</span></div>
+      <div class="check-item"><div class="check-box"></div><span>モバイルバッテリーをフル充電</span></div>
+      <div class="check-item"><div class="check-box"></div><span>グッズ購入 時間枠を予約（12:00〜枠を狙う）</span></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  🌟 嵐コンサート、楽しんできてね！ 🌟<br>
+  清水農園デジタル化プロジェクト ／ 2026年5月
+</footer>
+
+</body>
+</html>
