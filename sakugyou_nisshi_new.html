@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>農作業日誌</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#f9f5fc;--fg:#3d2a4d;--card:#fdfaff;--primary:#7c4dab;
+      --primary2:#9b6bc4;--secondary:#ede4f5;--sec-fg:#4a3560;
+      --muted:#f0e8f6;--muted-fg:#7a6889;--accent:#4a9c5d;
+      --border:#e0d4eb;--red:#c53030;--radius:1rem
+    }
+    body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;-webkit-tap-highlight-color:transparent}
+    .container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+
+    /* Header */
+    .header{background:linear-gradient(135deg,#7c4dab,#9b6bc4,#b388d4);padding:20px 20px 16px;text-align:center;position:relative;overflow:hidden}
+    .header::before{content:'';position:absolute;inset:-50%;background:radial-gradient(circle,rgba(255,255,255,.1),transparent 60%);animation:shimmer 8s ease-in-out infinite}
+    @keyframes shimmer{0%,100%{transform:translate(0,0)}50%{transform:translate(10%,10%)}}
+    .header-content{position:relative;z-index:1}
+    .header-title{display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;font-size:26px;font-weight:700}
+    .header-sub{color:rgba(255,255,255,.85);font-size:13px;margin-top:2px}
+    .db-status{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(255,255,255,.2);color:#fff}
+    .db-status.connected{background:rgba(74,156,93,.4)}
+    .db-status.disconnected{background:rgba(197,48,48,.4)}
+    .status-dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+    .settings-toggle{background:none;border:none;color:rgba(255,255,255,.75);font-size:12px;cursor:pointer;margin-top:4px;text-decoration:underline;font-family:inherit}
+
+    /* Settings */
+    .settings-panel{background:#fff8e8;border:2px solid #f6d860;border-radius:14px;padding:16px;margin:12px 16px}
+    .settings-title{font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px}
+    .settings-input{width:100%;padding:10px;font-size:13px;font-family:monospace;border:1px solid #e5d4a0;border-radius:8px;background:#fff;color:var(--fg);margin-bottom:8px}
+    .settings-save-btn{width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#7c4dab,#9b6bc4);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+
+    /* Tabs */
+    .tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+    .tab-btn{flex:1;padding:14px 4px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:500;color:var(--muted-fg);cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;gap:4px;transition:color .2s}
+    .tab-btn.active{color:var(--primary)}
+    .tab-btn.active::after{content:'';position:absolute;bottom:0;left:15%;right:15%;height:3px;background:var(--primary);border-radius:3px 3px 0 0}
+
+    /* Tab content */
+    .tab-content{display:none;flex:1;overflow-y:auto;padding:16px}
+    .tab-content.active{display:block}
+
+    /* ==============================
+       写真取込タブ
+    ============================== */
+    .import-hero{text-align:center;padding:20px 0 10px}
+    .import-icon{font-size:56px;margin-bottom:8px}
+    .import-title{font-size:18px;font-weight:700;color:var(--fg);margin-bottom:6px}
+    .import-desc{font-size:14px;color:var(--muted-fg);line-height:1.6;margin-bottom:20px}
+    .import-select-btn{display:inline-flex;align-items:center;gap:10px;padding:18px 32px;border:none;border-radius:20px;background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(124,77,171,.35);transition:transform .2s}
+    .import-select-btn:active{transform:scale(.97)}
+
+    /* 処理中 */
+    .import-processing{text-align:center;padding:40px 20px}
+    .import-spinner{width:48px;height:48px;border:4px solid var(--secondary);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .import-prog-text{font-size:15px;color:var(--muted-fg)}
+
+    /* 日付グループ */
+    .batch-groups-wrap{display:flex;flex-direction:column;gap:14px}
+    .batch-group{background:var(--card);border-radius:16px;overflow:hidden;border:1px solid var(--border)}
+    .batch-group-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:linear-gradient(135deg,var(--muted),var(--secondary));cursor:pointer}
+    .batch-date-label{font-size:16px;font-weight:700;color:var(--fg)}
+    .batch-count-badge{font-size:13px;color:var(--primary);font-weight:600;background:rgba(124,77,171,.12);padding:3px 10px;border-radius:20px}
+    .batch-thumbs{display:flex;gap:4px;padding:8px 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .batch-thumbs::-webkit-scrollbar{display:none}
+    .batch-thumb{flex-shrink:0;width:70px;height:70px;border-radius:8px;overflow:hidden;cursor:pointer}
+    .batch-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .batch-thumb:active{opacity:.75}
+    .batch-meta{padding:0 12px 14px}
+    .batch-label{font-size:12px;font-weight:600;color:var(--muted-fg);margin:10px 0 6px}
+    .batch-tags{display:flex;flex-wrap:wrap;gap:6px}
+    .batch-tag{padding:7px 14px;border:2px solid var(--border);border-radius:20px;background:var(--card);font-family:inherit;font-size:13px;font-weight:500;color:var(--fg);cursor:pointer;transition:all .15s}
+    .batch-tag.active{background:var(--primary);border-color:transparent;color:#fff}
+    .batch-tag.shine.active{background:linear-gradient(135deg,#bbf7d0,#6ee7a0);border-color:#4ade80;color:#065f46}
+    .batch-tag.pione.active{background:linear-gradient(135deg,#9b1b4a,#c2185b);border-color:transparent;color:#fff}
+    .batch-textarea{width:100%;padding:10px;font-size:14px;font-family:inherit;border:2px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);resize:vertical;min-height:60px;margin-top:6px}
+    .batch-textarea:focus{outline:none;border-color:var(--primary)}
+    .batch-save-btn{width:100%;padding:18px;border:none;border-radius:18px;background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer;margin-top:16px;box-shadow:0 4px 15px rgba(124,77,171,.3)}
+    .batch-save-btn:disabled{opacity:.6;cursor:not-allowed}
+    .batch-back-btn{width:100%;padding:12px;border:2px solid var(--border);border-radius:14px;background:transparent;color:var(--muted-fg);font-family:inherit;font-size:14px;cursor:pointer;margin-top:8px}
+
+    /* ==============================
+       記録フォーム (手動入力)
+    ============================== */
+    .form-section{margin-bottom:20px}
+    .section-label{display:block;font-size:14px;font-weight:600;color:var(--fg);margin-bottom:8px}
+    .date-input{width:100%;padding:14px;font-size:17px;font-family:inherit;border:2px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg)}
+    .date-input:focus{outline:none;border-color:var(--primary)}
+    .weather-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .weather-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 6px;border:2px solid var(--border);border-radius:14px;background:var(--card);font-family:inherit;font-size:12px;font-weight:500;color:var(--fg);cursor:pointer}
+    .weather-btn.selected{border-color:transparent}
+    .weather-btn.sunny.selected{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e}
+    .weather-btn.cloudy.selected{background:linear-gradient(135deg,#e5e7eb,#d1d5db);color:#374151}
+    .weather-btn.rainy.selected{background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1e40af}
+    .weather-btn.snowy.selected{background:linear-gradient(135deg,#f0f9ff,#e0f2fe);color:#0369a1}
+    .wi{font-size:26px}
+    .temp-row{display:flex;gap:10px;align-items:center}
+    .temp-sm{width:68px;padding:10px 6px;font-size:16px;font-family:inherit;border:2px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg);text-align:center}
+    .temp-sm:focus{outline:none;border-color:var(--primary)}
+    .temp-unit{font-size:17px;color:var(--muted-fg)}
+    .auto-btn{display:flex;align-items:center;gap:6px;padding:12px 16px;border:none;border-radius:var(--radius);background:linear-gradient(135deg,var(--accent),#3d8b4f);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+    .auto-btn:disabled{opacity:.7}
+    .sel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    .sel-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:16px 10px;border:2px solid var(--border);border-radius:14px;background:var(--card);font-family:inherit;font-size:15px;font-weight:500;color:var(--fg);cursor:pointer;transition:all .15s}
+    .sel-btn.selected{background:linear-gradient(135deg,var(--primary),var(--primary2));border-color:transparent;color:#fff}
+    .sel-btn.shine.selected{background:linear-gradient(135deg,#d1fae5,#6ee7a0)!important;border-color:#4ade80!important;color:#065f46!important}
+    .sel-btn.pione.selected{background:linear-gradient(135deg,#9b1b4a,#c2185b)!important;border-color:transparent!important;color:#fff!important}
+    .textarea{width:100%;padding:14px;font-size:15px;font-family:inherit;border:2px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg);resize:vertical;min-height:90px}
+    .textarea:focus{outline:none;border-color:var(--primary)}
+    .textarea::placeholder{color:var(--muted-fg)}
+    .photo-upload-btn{display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:#fff;border-radius:20px;padding:8px 18px;font-size:14px;cursor:pointer}
+    .photo-thumbs-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .photo-thumb{position:relative;width:76px;height:76px}
+    .photo-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px;cursor:pointer}
+    .photo-thumb button{position:absolute;top:-6px;right:-6px;background:#e53e3e;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:10px;cursor:pointer}
+    .submit-btn{width:100%;padding:18px;border:none;border-radius:18px;background:linear-gradient(135deg,var(--primary),var(--primary2),#b388d4);color:#fff;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(124,77,171,.3);margin-top:6px}
+    .submit-btn:disabled{opacity:.6}
+
+    /* ==============================
+       一覧タブ
+    ============================== */
+    .filter-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+    .filter-sel{flex:1;min-width:110px;padding:9px 10px;font-size:13px;font-family:inherit;border:2px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg)}
+    .reload-btn{padding:9px 14px;border:none;border-radius:10px;background:var(--secondary);color:var(--sec-fg);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+    .entry-list{display:flex;flex-direction:column;gap:14px}
+    .entry-card{background:var(--card);border-radius:18px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);border:1px solid var(--border)}
+    .entry-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+    .entry-dw{display:flex;align-items:center;gap:10px}
+    .entry-date{font-size:17px;font-weight:700}
+    .entry-wx{font-size:22px}
+    .card-chev{font-size:12px;color:#999;margin-left:auto}
+    .entry-summary{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+    .entry-tag{padding:5px 12px;border-radius:20px;font-size:13px;font-weight:500}
+    .entry-tag.person{background:linear-gradient(135deg,#fce7f3,#fbcfe8);color:#9d174d}
+    .entry-tag.area{background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#065f46}
+    .entry-tag.area.pione{background:linear-gradient(135deg,#f3d0e0,#e88aad);color:#7b1240}
+    .photo-badge{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#7c4dab,#9b6bc4);color:#fff;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;box-shadow:0 2px 6px rgba(124,77,171,.35)}
+    .summary-text{font-size:12px;color:#666;flex:1;min-width:100%;margin-top:2px}
+    .entry-detail{display:none}
+    .entry-memo-box{font-size:13px;color:var(--muted-fg);padding:10px;background:var(--muted);border-radius:10px;margin-bottom:10px}
+    .entry-content-text{font-size:14px;line-height:1.6;margin-bottom:8px}
+    .entry-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+    .action-btn{padding:9px 18px;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+    .action-btn.edit{background:var(--secondary);color:var(--sec-fg)}
+    .action-btn.delete{background:#fee2e2;color:var(--red)}
+    .entry-card.collapsed{cursor:pointer}
+
+    /* 写真を見るボタン */
+    .photo-view-btn{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#7c4dab,#9b6bc4);color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 3px 12px rgba(124,77,171,.3)}
+    .photo-view-btn:active{transform:scale(.97)}
+
+    /* Photo grid in entry detail */
+    .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:8px;margin-bottom:10px}
+    .pg-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer}
+    .pg-item img{width:100%;height:100%;object-fit:cover;display:block}
+    .pg-item:active img{opacity:.8}
+    .pg-more{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;font-weight:700;border-radius:8px}
+
+    /* ==============================
+       カレンダータブ
+    ============================== */
+    .cal-nav{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 6px}
+    .cal-nav-btn{background:#6b3fa0;color:#fff;border:none;border-radius:50%;width:34px;height:34px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .cal-month{font-size:17px;font-weight:700;color:#4a2d7a}
+    .cal-grid-wrap{padding:0 6px 14px}
+    .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;font-weight:600;color:#888;margin-bottom:3px}
+    .cal-weekdays span:first-child{color:#e74c3c}
+    .cal-weekdays span:last-child{color:#3498db}
+    .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+    .cal-day{aspect-ratio:1;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:4px;font-size:12px;font-weight:500;cursor:default;background:#f5f0ff;min-height:42px}
+    .cal-day.empty{background:transparent}
+    .cal-day.today{border:2px solid #6b3fa0}
+    .cal-day.sunday{color:#e74c3c}
+    .cal-day.saturday{color:#3498db}
+    .cal-day.has-photo{background:#fff;box-shadow:0 1px 4px rgba(107,63,160,.2);cursor:pointer}
+    .cal-day.has-photo:active{transform:scale(.95)}
+    .cal-photo-dot{width:18px;height:3px;border-radius:2px;background:linear-gradient(90deg,#a855f7,#7c3aed);margin-top:2px}
+    .cal-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;padding:1px 2px 0}
+    .cal-dot{width:5px;height:5px;border-radius:50%}
+    .dot-shine{background:#a855f7}.dot-pione{background:#7c3aed}.dot-negi{background:#16a34a}.dot-other{background:#9ca3af}
+
+    /* Calendar Detail Modal */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;justify-content:center;padding:0}
+    .modal-overlay.active{display:flex}
+    .cal-detail-sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:16px}
+    .cal-sheet-handle{width:40px;height:4px;background:#ccc;border-radius:4px;margin:0 auto 14px}
+    .cal-detail-date{font-size:18px;font-weight:700;color:#4a2d7a;margin-bottom:12px}
+
+    /* Photo gallery in calendar detail */
+    .cal-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:10px}
+    .cal-gallery-item{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer}
+    .cal-gallery-item img{width:100%;height:100%;object-fit:cover;display:block}
+    .cal-gallery-item:active{opacity:.75}
+    .cal-photo-count{font-size:12px;color:var(--muted-fg);text-align:center;margin-bottom:14px}
+    .cal-entry-detail{background:#f5f0ff;border-radius:10px;padding:10px;margin-bottom:8px}
+    .cal-meta{display:flex;gap:5px;flex-wrap:wrap;font-size:11px;margin-bottom:5px}
+    .cal-tag{background:#6b3fa0;color:#fff;border-radius:8px;padding:2px 8px;font-size:11px}
+    .cal-tag.green{background:#16a34a}
+    .cal-entry-text{font-size:13px;color:#333;white-space:pre-line}
+
+    /* Delete Modal */
+    .del-modal{background:var(--card);border-radius:22px;padding:22px;max-width:300px;width:90%;text-align:center}
+    .del-title{font-size:17px;font-weight:700;margin-bottom:10px}
+    .del-msg{font-size:14px;color:var(--muted-fg);margin-bottom:20px}
+    .del-btns{display:flex;gap:10px}
+    .del-btn{flex:1;padding:13px;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer}
+    .del-btn.cancel{background:var(--secondary);color:var(--sec-fg)}
+    .del-btn.confirm{background:var(--red);color:#fff}
+
+    /* Lightbox */
+    .lightbox{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.96);flex-direction:column;align-items:center;justify-content:center}
+    .lightbox.active{display:flex}
+    #lb-img{max-width:100vw;max-height:calc(100vh - 100px);object-fit:contain;border-radius:2px;user-select:none;-webkit-user-drag:none}
+    .lb-close{position:fixed;top:18px;right:18px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .lb-nav{position:fixed;top:50%;transform:translateY(-50%);width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:30px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .lb-nav.hidden{display:none}
+    .lb-prev{left:10px}.lb-next{right:10px}
+    .lb-counter{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;background:rgba(0,0,0,.4);padding:5px 14px;border-radius:20px}
+
+    /* Toast */
+    .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--fg);color:#fff;padding:13px 22px;border-radius:14px;font-size:14px;font-weight:500;opacity:0;transition:all .3s;z-index:200;white-space:nowrap}
+    .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+    .toast.error{background:var(--red)}
+
+    /* Empty / Loading */
+    .empty-state{text-align:center;padding:50px 16px}
+    .empty-icon{font-size:56px;margin-bottom:12px}
+    .empty-title{font-size:18px;font-weight:700;margin-bottom:6px}
+    .empty-desc{font-size:14px;color:var(--muted-fg)}
+    .loading-state{text-align:center;padding:36px;color:var(--muted-fg)}
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <h1 class="header-title"><span>🍇</span>農作業日誌</h1>
+      <p class="header-sub">清水農園の毎日を記録</p>
+      <div class="db-status disconnected" id="db-status">
+        <span class="status-dot">●</span>
+        <span id="db-status-text">データベース未接続</span>
+      </div><br>
+      <button class="settings-toggle" onclick="toggleSettings()">⚙️ Supabase設定</button>
+    </div>
+  </header>
+
+  <!-- Settings -->
+  <div class="settings-panel" id="settings-panel" style="display:none">
+    <div class="settings-title">⚙️ Supabase 接続設定</div>
+    <label style="font-size:12px;font-weight:600;color:#92400e;display:block;margin-bottom:3px">Supabase URL</label>
+    <input type="text" class="settings-input" id="supabase-url" placeholder="https://xxxxxxxx.supabase.co">
+    <label style="font-size:12px;font-weight:600;color:#92400e;display:block;margin-bottom:3px">Anon Key</label>
+    <input type="text" class="settings-input" id="supabase-key" placeholder="eyJ...">
+    <button class="settings-save-btn" onclick="saveSupabaseConfig()">接続する</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="import">📖 使い方</button>
+    <button class="tab-btn" data-tab="entry">✏️ 記録</button>
+    <button class="tab-btn" data-tab="list">📋 一覧</button>
+    <button class="tab-btn" data-tab="calendar">📅 カレンダー</button>
+  </div>
+
+  <!-- ========================
+       📸 写真取込タブ
+  ======================== -->
+  <div class="tab-content active" id="import-tab">
+    <div style="padding:4px 0">
+
+      <!-- タイトル -->
+      <div style="text-align:center;padding:16px 0 20px">
+        <div style="font-size:48px;margin-bottom:8px">🍇</div>
+        <div style="font-size:19px;font-weight:700;color:var(--fg)">農作業日誌の使い方</div>
+        <div style="font-size:13px;color:var(--muted-fg);margin-top:4px">清水農園</div>
+      </div>
+
+      <!-- 写真取込の手順 -->
+      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:14px">
+        <div style="font-size:15px;font-weight:700;color:var(--fg);margin-bottom:14px">📷 写真を取り込む手順</div>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="min-width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">1</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--fg)">iPhoneで写真を撮る</div>
+              <div style="font-size:12px;color:var(--muted-fg);margin-top:2px">作業中に農作業の写真を撮影</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="min-width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">2</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--fg)">メモアプリで新しいメモを作る</div>
+              <div style="font-size:12px;color:var(--muted-fg);margin-top:2px">タイトルに「作業」+日付を入れる</div>
+              <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px">
+                <div style="background:var(--muted);border-radius:8px;padding:7px 12px;font-size:13px;font-family:monospace;color:var(--primary);font-weight:600">作業4/20</div>
+                <div style="background:var(--muted);border-radius:8px;padding:7px 12px;font-size:13px;font-family:monospace;color:var(--primary);font-weight:600">作業5月3日</div>
+                <div style="background:var(--muted);border-radius:8px;padding:7px 12px;font-size:13px;font-family:monospace;color:var(--primary);font-weight:600">作業2026/4/20</div>
+              </div>
+              <div style="font-size:12px;color:var(--muted-fg);margin-top:6px">そのメモの中に写真を貼り付ける</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="min-width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">3</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--fg)">Macでスクリプトを実行する</div>
+              <div style="font-size:12px;color:var(--muted-fg);margin-top:2px">農作業日誌アプリのフォルダにある</div>
+              <div style="background:var(--muted);border-radius:8px;padding:7px 12px;font-size:13px;font-family:monospace;color:var(--fg);margin-top:6px">メモ写真取込.py</div>
+              <div style="font-size:12px;color:var(--muted-fg);margin-top:4px">をダブルクリック → Enterキーで完了</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px">✓</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--fg)">一覧・カレンダーで確認</div>
+              <div style="font-size:12px;color:var(--muted-fg);margin-top:2px">その日の記録に写真が自動で追加される<br>紫の <strong>📷 X枚</strong> バッジが目印</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- このページを最新に更新 -->
+      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:14px">
+        <div style="font-size:15px;font-weight:700;color:var(--fg);margin-bottom:8px">🔄 アプリを最新版に更新</div>
+        <div style="font-size:13px;color:var(--muted-fg);margin-bottom:12px">iPhoneでアプリを開いたとき古い画面が表示される場合は、下のボタンで最新版に更新してください。</div>
+        <button onclick="location.reload(true)" style="width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">
+          🔄 最新版に更新する
+        </button>
+        <div style="font-size:11px;color:var(--muted-fg);margin-top:8px;text-align:center">
+          iPhoneのホーム画面に追加する場合はSafariで開き<br>「ホーム画面に追加」をタップしてください
+        </div>
+      </div>
+
+      <!-- 記録の付け方 -->
+      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:14px">
+        <div style="font-size:15px;font-weight:700;color:var(--fg);margin-bottom:10px">✏️ 記録の付け方</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--muted-fg)">
+          <div>「<strong style="color:var(--fg)">記録する</strong>」タブ → 天気・気温・担当者・作業内容を入力して保存</div>
+          <div>「<strong style="color:var(--fg)">一覧を見る</strong>」タブ → 過去の記録を確認・タップで詳細表示</div>
+          <div>「<strong style="color:var(--fg)">カレンダー</strong>」タブ → 月単位でカレンダー表示・日付タップで写真と記録を確認</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================
+       ✏️ 手動記録タブ
+  ======================== -->
+  <div class="tab-content" id="entry-tab">
+    <form id="entry-form">
+      <div class="form-section">
+        <label class="section-label">📅 日付</label>
+        <input type="date" class="date-input" id="entry-date" required>
+      </div>
+      <div class="form-section">
+        <label class="section-label">🌤️ 天気</label>
+        <div class="weather-grid">
+          <button type="button" class="weather-btn sunny" data-weather="sunny"><span class="wi">☀️</span>晴れ</button>
+          <button type="button" class="weather-btn cloudy" data-weather="cloudy"><span class="wi">☁️</span>曇り</button>
+          <button type="button" class="weather-btn rainy" data-weather="rainy"><span class="wi">🌧️</span>雨</button>
+          <button type="button" class="weather-btn snowy" data-weather="snowy"><span class="wi">❄️</span>雪</button>
+        </div>
+      </div>
+      <div class="form-section">
+        <label class="section-label">🌡️ 気温（最高/最低）</label>
+        <div class="temp-row">
+          <input type="number" class="temp-sm" id="entry-temp" placeholder="最高" step="0.1">
+          <span class="temp-unit">°C</span>
+          <input type="number" class="temp-sm" id="entry-temp-min" placeholder="最低" step="0.1">
+          <span class="temp-unit">°C</span>
+          <button type="button" class="auto-btn" id="auto-temp-btn"><span>📍</span>自動</button>
+        </div>
+      </div>
+      <div class="form-section">
+        <label class="section-label">🏠 ハウス内温度</label>
+        <div class="temp-row">
+          <input type="number" class="temp-sm" id="entry-house-temp" placeholder="温度" step="0.1">
+          <span class="temp-unit">°C</span>
+        </div>
+      </div>
+      <div class="form-section">
+        <label class="section-label">👤 担当者</label>
+        <div class="sel-grid">
+          <button type="button" class="sel-btn" data-person="剛志">👨‍🌾 剛志</button>
+          <button type="button" class="sel-btn" data-person="京子">👩‍🌾 京子</button>
+          <button type="button" class="sel-btn" data-person="おばあちゃん">👵 おばあちゃん</button>
+          <button type="button" class="sel-btn" data-person="母">🌸 母</button>
+          <button type="button" class="sel-btn" data-person="父">👨 父</button>
+        </div>
+      </div>
+      <div class="form-section">
+        <label class="section-label">🌿 作業エリア</label>
+        <div class="sel-grid">
+          <button type="button" class="sel-btn shine" data-area="シャインマスカット">🍇 シャイン</button>
+          <button type="button" class="sel-btn pione" data-area="ピオーネ">🍇 ピオーネ</button>
+          <button type="button" class="sel-btn" data-area="白ネギ">🌱 白ネギ</button>
+        </div>
+        <p style="font-size:11px;color:#888;margin-top:4px">複数選択OK</p>
+      </div>
+      <div class="form-section">
+        <label class="section-label">🔧 作業内容</label>
+        <textarea class="textarea" id="entry-content" placeholder="今日の作業内容..." rows="3"></textarea>
+      </div>
+      <div class="form-section">
+        <label class="section-label">🧪 農薬・資材</label>
+        <textarea class="textarea" id="entry-pesticide" placeholder="スミチオン300g..." rows="2"></textarea>
+      </div>
+      <div class="form-section">
+        <label class="section-label">📝 メモ</label>
+        <textarea class="textarea" id="entry-memo" placeholder="気づきなど..." rows="2"></textarea>
+      </div>
+      <div class="form-section">
+        <label class="section-label">📷 写真</label>
+        <label class="photo-upload-btn" for="photo-input">📷 写真を選ぶ</label>
+        <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="handleFormPhoto(this)">
+        <div id="form-photo-thumbs" class="photo-thumbs-row"></div>
+      </div>
+      <button type="submit" class="submit-btn" id="submit-btn">🍇 記録を保存する</button>
+    </form>
+  </div>
+
+  <!-- ========================
+       📋 一覧タブ
+  ======================== -->
+  <div class="tab-content" id="list-tab">
+    <div class="filter-bar">
+      <select class="filter-sel" id="filter-person" onchange="filterEntries()">
+        <option value="">全員</option>
+        <option>剛志</option><option>京子</option><option>おばあちゃん</option><option>母</option><option>父</option>
+      </select>
+      <select class="filter-sel" id="filter-area" onchange="filterEntries()">
+        <option value="">全エリア</option>
+        <option value="シャインマスカット">シャイン</option>
+        <option value="ピオーネ">ピオーネ</option>
+        <option value="白ネギ">白ネギ</option>
+      </select>
+      <button class="reload-btn" onclick="loadEntries()">🔄</button>
+    </div>
+    <div class="entry-list" id="entry-list"><div class="loading-state">読み込み中...</div></div>
+  </div>
+
+  <!-- ========================
+       📅 カレンダータブ
+  ======================== -->
+  <div class="tab-content" id="calendar-tab">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calPrevMonth()">‹</button>
+      <span class="cal-month" id="cal-month"></span>
+      <button class="cal-nav-btn" onclick="calNextMonth()">›</button>
+    </div>
+    <div class="cal-grid-wrap" id="cal-grid"></div>
+  </div>
+</div>
+
+<!-- カレンダー詳細シート -->
+<div class="modal-overlay" id="cal-modal" onclick="closeCalModal(event)">
+  <div class="cal-detail-sheet">
+    <div class="cal-sheet-handle"></div>
+    <div id="cal-modal-content"></div>
+  </div>
+</div>
+
+<!-- 削除確認 -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="del-modal">
+    <h3 class="del-title">記録を削除しますか？</h3>
+    <p class="del-msg">この操作は取り消せません</p>
+    <div class="del-btns">
+      <button class="del-btn cancel" id="cancel-delete">キャンセル</button>
+      <button class="del-btn confirm" id="confirm-delete">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ライトボックス -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-nav lb-prev hidden" id="lb-prev" onclick="navPhoto(-1)">‹</button>
+  <img id="lb-img" alt="">
+  <button class="lb-nav lb-next hidden" id="lb-next" onclick="navPhoto(1)">›</button>
+  <div class="lb-counter" id="lb-counter"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== Supabase ====================
+const PRESET_URL = 'https://rydqtqgeqobqqbeenbzt.supabase.co';
+const PRESET_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5ZHF0cWdlcW9icXFiZWVuYnp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NTIxNzcsImV4cCI6MjA5MTEyODE3N30.50MC1o0xVj1uZfFafi0xgRCYYYRLFbZlOPsk40j-Pzo';
+let supabase = null;
+
+function initSupabase(url, key) {
+  supabase = { url: url.replace(/\/$/, ''), key };
+  updateDbStatus(true);
+  loadEntries();
+}
+async function sbFetch(method, path, body, params) {
+  let url = supabase.url + '/rest/v1/' + path;
+  if (params) url += '?' + params;
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'apikey': supabase.key, 'Authorization': 'Bearer ' + supabase.key,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'GET' ? 'count=exact' : 'return=representation'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const t = await res.text(); return t ? JSON.parse(t) : [];
+}
+function updateDbStatus(ok) {
+  document.getElementById('db-status').className = 'db-status ' + (ok ? 'connected' : 'disconnected');
+  document.getElementById('db-status-text').textContent = ok ? 'データベース接続中' : 'データベース未接続';
+}
+function saveSupabaseConfig() {
+  const url = document.getElementById('supabase-url').value.trim();
+  const key = document.getElementById('supabase-key').value.trim();
+  if (!url || !key) { showToast('URLとキーを入力してください', true); return; }
+  try { localStorage.setItem('farm_url', url); localStorage.setItem('farm_key', key); } catch(e) {}
+  initSupabase(url, key);
+  showToast('Supabaseに接続しました！'); toggleSettings();
+}
+function toggleSettings() {
+  const p = document.getElementById('settings-panel');
+  const show = p.style.display === 'none';
+  p.style.display = show ? 'block' : 'none';
+  if (show) {
+    document.getElementById('supabase-url').value = localStorage.getItem('farm_url') || '';
+    document.getElementById('supabase-key').value = localStorage.getItem('farm_key') || '';
+  }
+}
+
+// ==================== EXIF 日付読み取り ====================
+async function readExifDate(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const buf = e.target.result;
+        const arr = new Uint8Array(buf);
+        const view = new DataView(buf);
+        if (arr[0] !== 0xFF || arr[1] !== 0xD8) { resolve(fileDate(file)); return; }
+        let pos = 2;
+        while (pos < arr.length - 4) {
+          if (arr[pos] !== 0xFF) break;
+          const marker = arr[pos + 1];
+          if (marker === 0xE1) {
+            const segLen = view.getUint16(pos + 2);
+            if (arr[pos+4]===0x45&&arr[pos+5]===0x78&&arr[pos+6]===0x69&&arr[pos+7]===0x66&&arr[pos+8]===0&&arr[pos+9]===0) {
+              const tiff = pos + 10;
+              const le = arr[tiff] === 0x49;
+              const ifd0 = tiff + view.getUint32(tiff + 4, le);
+              const n = view.getUint16(ifd0, le);
+              let exifPtr = 0, dt = null;
+              for (let i = 0; i < n; i++) {
+                const eo = ifd0 + 2 + i * 12;
+                const tag = view.getUint16(eo, le);
+                if (tag === 0x8769) exifPtr = view.getUint32(eo + 8, le);
+                if (tag === 0x0132) {
+                  const vo = view.getUint32(eo + 8, le);
+                  let s = ''; for (let c=0;c<19;c++) s+=String.fromCharCode(arr[tiff+vo+c]);
+                  const m = s.match(/(\d{4}):(\d{2}):(\d{2})/);
+                  if (m) dt = `${m[1]}-${m[2]}-${m[3]}`;
+                }
+              }
+              if (exifPtr) {
+                const exifIfd = tiff + exifPtr;
+                const ne = view.getUint16(exifIfd, le);
+                for (let i = 0; i < ne; i++) {
+                  const eo = exifIfd + 2 + i * 12;
+                  const tag = view.getUint16(eo, le);
+                  if (tag === 0x9003 || tag === 0x9004) {
+                    const vo = view.getUint32(eo + 8, le);
+                    let s = ''; for (let c=0;c<19;c++) s+=String.fromCharCode(arr[tiff+vo+c]);
+                    const m = s.match(/(\d{4}):(\d{2}):(\d{2})/);
+                    if (m) { resolve(`${m[1]}-${m[2]}-${m[3]}`); return; }
+                  }
+                }
+              }
+              if (dt) { resolve(dt); return; }
+            }
+            pos += 2 + segLen;
+          } else if (marker === 0xDA || marker === 0xD9) { break; }
+          else { const l = view.getUint16(pos + 2); pos += 2 + l; }
+        }
+        resolve(fileDate(file));
+      } catch { resolve(fileDate(file)); }
+    };
+    reader.readAsArrayBuffer(file.slice(0, 131072));
+  });
+}
+function fileDate(file) {
+  const d = new Date(file.lastModified);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ==================== 写真圧縮 ====================
+function compressPhoto(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxW = 1200;
+        const scale = Math.min(1, maxW / img.width);
+        canvas.width = img.width * scale; canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ==================== バッチ取込 ====================
+let batchGroups = {}; // { 'YYYY-MM-DD': { dataUrls:[], persons:[], areas:[], content:'' } }
+
+async function handleBatchPhotos(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  document.getElementById('import-step1').style.display = 'none';
+  document.getElementById('import-step2').style.display = 'block';
+  batchGroups = {};
+  const prog = document.getElementById('import-prog');
+  for (let i = 0; i < files.length; i++) {
+    prog.textContent = `${i + 1} / ${files.length} 枚を処理中...`;
+    const [date, dataUrl] = await Promise.all([readExifDate(files[i]), compressPhoto(files[i])]);
+    if (!batchGroups[date]) batchGroups[date] = { dataUrls: [], persons: [], areas: [], content: '' };
+    batchGroups[date].dataUrls.push(dataUrl);
+  }
+  input.value = '';
+  document.getElementById('import-step2').style.display = 'none';
+  renderBatchGroups();
+  document.getElementById('import-step3').style.display = 'block';
+}
+
+function renderBatchGroups() {
+  const days = ['日','月','火','水','木','金','土'];
+  const sorted = Object.keys(batchGroups).sort().reverse();
+  document.getElementById('batch-groups').innerHTML = sorted.map(date => {
+    const g = batchGroups[date];
+    const d = new Date(date + 'T00:00:00');
+    const label = `${d.getMonth()+1}月${d.getDate()}日 (${days[d.getDay()]})`;
+    const urlsJson = JSON.stringify(g.dataUrls).replace(/"/g, '&quot;');
+    return `<div class="batch-group">
+      <div class="batch-group-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'flex':'none'">
+        <span class="batch-date-label">📅 ${label}</span>
+        <span class="batch-count-badge">📷 ${g.dataUrls.length}枚</span>
+      </div>
+      <div class="batch-thumbs">
+        ${g.dataUrls.map((url,i)=>`<div class="batch-thumb" onclick="openLightbox(batchGroups['${date}'].dataUrls,${i})"><img src="${url}" loading="lazy"></div>`).join('')}
+      </div>
+      <div class="batch-meta">
+        <div class="batch-label">👤 担当者</div>
+        <div class="batch-tags">
+          ${['剛志','京子','おばあちゃん','母','父'].map(p=>`<button class="batch-tag" onclick="toggleBatchVal('${date}','persons','${p}',this)">${p}</button>`).join('')}
+        </div>
+        <div class="batch-label">🌿 作業エリア</div>
+        <div class="batch-tags">
+          <button class="batch-tag shine" onclick="toggleBatchVal('${date}','areas','シャインマスカット',this)">シャイン</button>
+          <button class="batch-tag pione" onclick="toggleBatchVal('${date}','areas','ピオーネ',this)">ピオーネ</button>
+          <button class="batch-tag" onclick="toggleBatchVal('${date}','areas','白ネギ',this)">白ネギ</button>
+        </div>
+        <div class="batch-label">🔧 作業内容（任意）</div>
+        <textarea class="batch-textarea" placeholder="作業内容を入力..." oninput="batchGroups['${date}'].content=this.value"></textarea>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleBatchVal(date, key, val, btn) {
+  const arr = batchGroups[date][key];
+  const idx = arr.indexOf(val);
+  if (idx >= 0) { arr.splice(idx, 1); btn.classList.remove('active'); }
+  else { arr.push(val); btn.classList.add('active'); }
+}
+
+async function saveBatchEntries() {
+  if (!supabase) { showToast('Supabaseに接続してください', true); return; }
+  const btn = document.getElementById('batch-save-btn');
+  btn.disabled = true; btn.textContent = '保存中...';
+  let saved = 0;
+  for (const date of Object.keys(batchGroups)) {
+    const g = batchGroups[date];
+    const memo = '[写真]\n' + g.dataUrls.join('\n');
+    try {
+      await sbFetch('POST', 'farm_entries', {
+        date, weather: null, temperature: null, house_temperature: null,
+        person: g.persons.length ? g.persons.join(',') : null,
+        area: g.areas.length ? g.areas.join(',') : null,
+        content: g.content || null, memo
+      }, null);
+      saved++;
+    } catch(e) { showToast(`${date}の保存失敗`, true); }
+  }
+  showToast(`${saved}日分を保存しました！`);
+  btn.disabled = false; btn.textContent = '💾 すべて保存する';
+  resetBatchImport();
+  await loadEntries();
+  // カレンダーに切り替え
+  switchTab('calendar');
+  renderCalendar();
+}
+
+function resetBatchImport() {
+  batchGroups = {};
+  document.getElementById('import-step3').style.display = 'none';
+  document.getElementById('import-step1').style.display = 'block';
+  document.getElementById('batch-input').value = '';
+}
+
+// ==================== 状態 ====================
+let entries = [], editingId = null, deleteId = null;
+let selWeather = '', selPersons = [], selAreas = [], formPhotos = [];
+
+// ==================== タブ切替 ====================
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === name + '-tab'));
+}
+
+// ==================== データ ====================
+async function loadEntries() {
+  if (!supabase) {
+    document.getElementById('entry-list').innerHTML = '<div class="empty-state"><div class="empty-icon">⚙️</div><h3 class="empty-title">Supabaseに接続してください</h3></div>';
+    return;
+  }
+  document.getElementById('entry-list').innerHTML = '<div class="loading-state">🍇 読み込み中...</div>';
+  try {
+    const pf = document.getElementById('filter-person').value;
+    const af = document.getElementById('filter-area').value;
+    let params = 'order=date.desc';
+    if (pf) params += '&person=ilike.*' + encodeURIComponent(pf) + '*';
+    if (af) params += '&area=eq.' + encodeURIComponent(af);
+    entries = await sbFetch('GET', 'farm_entries', null, params) || [];
+    renderEntries();
+  } catch(e) {
+    document.getElementById('entry-list').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3 class="empty-title">読み込みエラー</h3><p class="empty-desc">${e.message}</p></div>`;
+  }
+}
+async function saveEntry(entry) {
+  if (!supabase) { showToast('Supabaseに接続してください', true); return false; }
+  try {
+    if (editingId) await sbFetch('PATCH','farm_entries',entry,'id=eq.'+editingId);
+    else await sbFetch('POST','farm_entries',entry,null);
+    return true;
+  } catch(e) { showToast('保存失敗: '+e.message, true); return false; }
+}
+async function deleteEntry(id) {
+  try { await sbFetch('DELETE','farm_entries',null,'id=eq.'+id); await loadEntries(); showToast('削除しました'); }
+  catch(e) { showToast('削除失敗', true); }
+}
+function filterEntries() { loadEntries(); }
+
+// ==================== 写真パース ====================
+function parsePhotos(memo) {
+  if (!memo) return [];
+  const tag = '[写真]\n';
+  const start = memo.indexOf(tag);
+  if (start === -1) return [];
+  const after = start + tag.length;
+  const end = memo.indexOf('\n\n[', after);
+  const part = end === -1 ? memo.slice(after) : memo.slice(after, end);
+  return part.trim().split('\n').filter(u => u.startsWith('data:') || u.startsWith('http'));
+}
+
+// ==================== 一覧レンダリング ====================
+function renderEntries() {
+  if (!entries.length) {
+    document.getElementById('entry-list').innerHTML = '<div class="empty-state"><div class="empty-icon">🍇</div><h3 class="empty-title">まだ記録がありません</h3><p class="empty-desc">写真取込か記録タブから追加しましょう</p></div>';
+    return;
+  }
+  const WX = {sunny:'☀️',cloudy:'☁️',rainy:'🌧️',snowy:'❄️'};
+  document.getElementById('entry-list').innerHTML = entries.map(entry => {
+    const rawMemo = entry.memo || '';
+    const photos = parsePhotos(rawMemo);
+    const pestMatch = rawMemo.match(/\[農薬・資材\]\n([\s\S]*?)(?=\n\n\[|$)/);
+    const memoMatch = rawMemo.match(/\[メモ・気づき\]\n([\s\S]*?)(?=\n\n\[|$)/);
+    const tminMatch = rawMemo.match(/\[最低気温\]\n([^\n]*)/);
+    const pestText = pestMatch ? pestMatch[1].trim() : '';
+    const memoText = memoMatch ? memoMatch[1].trim() : (!rawMemo.startsWith('[') ? rawMemo : '');
+    const tmin = tminMatch ? tminMatch[1] : '';
+    const wx = WX[entry.weather] || '';
+    const tStr = entry.temperature != null ? ` 🌡️${entry.temperature}℃${tmin?'/'+tmin:''}` : '';
+    const summary = entry.content ? entry.content.replace(/\n/g,' ').substring(0,38)+(entry.content.length>38?'…':'') : '';
+    const areaHtml = entry.area ? entry.area.split(',').map(a=>`<span class="entry-tag area${a==='ピオーネ'?' pione':''}">🌿 ${a}</span>`).join('') : '';
+    const personHtml = entry.person ? entry.person.split(',').map(p=>`<span class="entry-tag person">👤 ${p}</span>`).join('') : '';
+    const MAX = 6;
+    let pgHtml = '';
+    if (photos.length) {
+      const shown = photos.slice(0, MAX), rest = photos.length - MAX;
+      const urlsJ = JSON.stringify(photos).replace(/"/g,'&quot;');
+      pgHtml = `<div onclick="event.stopPropagation()">
+        <button class="photo-view-btn" onclick="openLightbox(${urlsJ},0)">
+          📷 写真を見る（${photos.length}枚）
+        </button>
+        <div class="photo-grid" style="margin-top:8px">
+          ${shown.map((u,i)=>`<div class="pg-item" onclick="openLightbox(${urlsJ},${i})"><img src="${u}" loading="lazy">${i===MAX-1&&rest>0?`<div class="pg-more">+${rest+1}</div>`:''}</div>`).join('')}
+        </div>
+      </div>`;
+    }
+    return `<div class="entry-card collapsed" onclick="toggleCard(this)">
+      <div class="entry-header">
+        <div class="entry-dw">
+          <span class="entry-date">${fmtDate(entry.date)}</span>
+          <span class="entry-wx">${wx}</span>
+          <span style="font-size:13px;color:var(--primary)">${tStr}</span>
+        </div>
+        <span class="card-chev">▼</span>
+      </div>
+      <div class="entry-summary">
+        ${personHtml}${areaHtml}
+        ${photos.length?`<span class="photo-badge">📷 ${photos.length}枚</span>`:''}
+        ${summary?`<span class="summary-text">${esc(summary)}</span>`:''}
+      </div>
+      <div class="entry-detail">
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${personHtml}${areaHtml}</div>
+        ${entry.temperature!=null?`<div class="entry-memo-box">🌡️ 最高${entry.temperature}℃${tmin?' 最低'+tmin:''}${entry.house_temperature!=null?' 🏠ハウス'+entry.house_temperature+'℃':''}</div>`:''}
+        ${entry.content?`<div class="entry-content-text">${esc(entry.content)}</div>`:''}
+        ${pestText?`<div class="entry-memo-box">🧪 <strong>農薬：</strong>${esc(pestText)}</div>`:''}
+        ${memoText?`<div class="entry-memo-box">📝 ${esc(memoText)}</div>`:''}
+        ${pgHtml}
+        <div class="entry-actions" onclick="event.stopPropagation()">
+          <button class="action-btn edit" onclick="editEntry(${entry.id})">修正</button>
+          <button class="action-btn delete" onclick="confirmDelete(${entry.id})">削除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmtDate(s) {
+  const d = new Date(s+'T00:00:00');
+  return `${d.getMonth()+1}/${d.getDate()}(${['日','月','火','水','木','金','土'][d.getDay()]})`;
+}
+function esc(t) {
+  const div = document.createElement('div'); div.textContent = t;
+  return div.innerHTML.replace(/\n/g,'<br>');
+}
+function toggleCard(card) {
+  const det = card.querySelector('.entry-detail');
+  const sum = card.querySelector('.entry-summary');
+  const chev = card.querySelector('.card-chev');
+  const open = det.style.display !== 'block';
+  det.style.display = open ? 'block' : 'none';
+  sum.style.display = open ? 'none' : 'flex';
+  chev.textContent = open ? '▲' : '▼';
+  card.classList.toggle('collapsed', !open);
+}
+
+// ==================== 手動フォーム ====================
+function applyAreaStyle(btn) {
+  if (btn.classList.contains('shine')) { btn.style.background='linear-gradient(135deg,#bbf7d0,#6ee7a0)';btn.style.color='#065f46';btn.style.borderColor='#4ade80'; }
+  else if (btn.classList.contains('pione')) { btn.style.background='linear-gradient(135deg,#9b1b4a,#c2185b)';btn.style.color='#fff';btn.style.borderColor='transparent'; }
+  else { btn.style.background='linear-gradient(135deg,var(--primary),var(--primary2))';btn.style.color='#fff';btn.style.borderColor='transparent'; }
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = '保存中...';
+  const pest = document.getElementById('entry-pesticide').value.trim();
+  const memo = document.getElementById('entry-memo').value.trim();
+  const tmin = document.getElementById('entry-temp-min').value.trim();
+  let combined = '';
+  if (tmin) combined += '[最低気温]\n' + tmin + '℃';
+  if (tmin && (pest||memo)) combined += '\n\n';
+  if (pest) combined += '[農薬・資材]\n' + pest;
+  if (pest && memo) combined += '\n\n';
+  if (memo) combined += '[メモ・気づき]\n' + memo;
+  if (formPhotos.length) { if (combined) combined += '\n\n'; combined += '[写真]\n' + formPhotos.join('\n'); }
+  const ok = await saveEntry({
+    date: document.getElementById('entry-date').value,
+    weather: selWeather || null,
+    temperature: document.getElementById('entry-temp').value ? parseFloat(document.getElementById('entry-temp').value) : null,
+    house_temperature: document.getElementById('entry-house-temp').value ? parseFloat(document.getElementById('entry-house-temp').value) : null,
+    person: selPersons.length ? selPersons.join(',') : null,
+    area: selAreas.length ? selAreas.join(',') : null,
+    content: document.getElementById('entry-content').value || null,
+    memo: combined || null
+  });
+  if (ok) {
+    showToast(editingId ? '記録を更新しました' : '記録を保存しました！');
+    editingId = null; resetForm();
+    switchTab('list'); loadEntries();
+  }
+  btn.disabled = false; btn.textContent = '🍇 記録を保存する';
+}
+
+function resetForm() {
+  document.getElementById('entry-form').reset();
+  document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
+  selWeather=''; selPersons=[]; selAreas=[]; formPhotos=[];
+  document.querySelectorAll('.weather-btn,[data-person],[data-area]').forEach(b=>{
+    b.classList.remove('selected'); b.style.background=b.style.color=b.style.borderColor='';
+  });
+  document.getElementById('form-photo-thumbs').innerHTML = '';
+  document.getElementById('submit-btn').textContent = '🍇 記録を保存する';
+}
+
+function editEntry(id) {
+  const entry = entries.find(e => e.id === id);
+  if (!entry) return;
+  editingId = id;
+  document.getElementById('entry-date').value = entry.date;
+  document.getElementById('entry-temp').value = entry.temperature ?? '';
+  document.getElementById('entry-house-temp').value = entry.house_temperature ?? '';
+  document.getElementById('entry-content').value = entry.content || '';
+  const rawMemo = entry.memo || '';
+  const tMinM = rawMemo.match(/\[最低気温\]\n([^\n]*)/);
+  const pestM = rawMemo.match(/\[農薬・資材\]\n([\s\S]*?)(?=\n\n\[|$)/);
+  const memoM = rawMemo.match(/\[メモ・気づき\]\n([\s\S]*?)(?=\n\n\[|$)/);
+  document.getElementById('entry-temp-min').value = tMinM ? tMinM[1].replace('℃','').trim() : '';
+  document.getElementById('entry-pesticide').value = pestM ? pestM[1].trim() : '';
+  document.getElementById('entry-memo').value = memoM ? memoM[1].trim() : (rawMemo.startsWith('[') ? '' : rawMemo);
+  formPhotos = []; document.getElementById('form-photo-thumbs').innerHTML = '';
+  document.querySelectorAll('.weather-btn').forEach(b => b.classList.toggle('selected', b.dataset.weather === entry.weather));
+  selWeather = entry.weather || '';
+  selPersons = entry.person ? entry.person.split(',') : [];
+  document.querySelectorAll('[data-person]').forEach(b => b.classList.toggle('selected', selPersons.includes(b.dataset.person)));
+  selAreas = entry.area ? entry.area.split(',') : [];
+  document.querySelectorAll('[data-area]').forEach(b => {
+    const isSel = selAreas.includes(b.dataset.area);
+    b.classList.toggle('selected', isSel);
+    if (isSel) applyAreaStyle(b); else b.style.background=b.style.color=b.style.borderColor='';
+  });
+  switchTab('entry');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('submit-btn').textContent = '🍇 記録を更新する';
+  showToast('編集モードです');
+}
+
+function confirmDelete(id) { deleteId = id; document.getElementById('delete-modal').classList.add('active'); }
+
+function handleFormPhoto(input) {
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const scale = Math.min(1, 1200 / img.width);
+        canvas.width = img.width * scale; canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const url = canvas.toDataURL('image/jpeg', 0.82);
+        formPhotos.push(url);
+        const idx = formPhotos.length - 1;
+        const div = document.createElement('div'); div.className = 'photo-thumb';
+        div.innerHTML = `<img src="${url}" onclick="openLightbox(formPhotos,${idx})"><button onclick="removeFormPhoto(this,${idx})">✕</button>`;
+        document.getElementById('form-photo-thumbs').appendChild(div);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+function removeFormPhoto(btn, idx) { formPhotos.splice(idx, 1); btn.parentElement.remove(); }
+
+// ==================== カレンダー ====================
+let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
+const AREA_DOT = {'シャインマスカット':'dot-shine','ピオーネ':'dot-pione','白ネギ':'dot-negi'};
+
+function renderCalendar() {
+  document.getElementById('cal-month').textContent = `${calYear}年${calMonth+1}月`;
+  const firstDow = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const today = new Date();
+  const byDate = {};
+  entries.forEach(e => { if (!byDate[e.date]) byDate[e.date]=[]; byDate[e.date].push(e); });
+  let html = '<div class="cal-weekdays"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div><div class="cal-days">';
+  for (let i=0;i<firstDow;i++) html += '<div class="cal-day empty"></div>';
+  for (let d=1;d<=daysInMonth;d++) {
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(calYear, calMonth, d).getDay();
+    const isToday = calYear===today.getFullYear()&&calMonth===today.getMonth()&&d===today.getDate();
+    const dayE = byDate[ds]||[];
+    const hasPhotos = dayE.some(e => parsePhotos(e.memo||'').length > 0);
+    const hasEntry = dayE.length > 0;
+    let cls = 'cal-day';
+    if (dow===0) cls+=' sunday'; if (dow===6) cls+=' saturday';
+    if (isToday) cls+=' today';
+    if (hasEntry) cls+=' has-photo';
+    let sub = '';
+    if (hasEntry) {
+      if (hasPhotos) sub += '<div class="cal-photo-dot"></div>';
+      sub += '<div class="cal-dots">' + dayE.map(e=>`<div class="cal-dot ${AREA_DOT[e.area]||'dot-other'}"></div>`).join('') + '</div>';
+    }
+    html += `<div class="${cls}"${hasEntry?` onclick="showCalDetail('${ds}')"`:''}><span>${d}</span>${sub}</div>`;
+  }
+  html += '</div>';
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function showCalDetail(dateStr) {
+  const dayE = entries.filter(e => e.date === dateStr);
+  if (!dayE.length) return;
+  const [y,m,d] = dateStr.split('-');
+  const dow = ['日','月','火','水','木','金','土'][new Date(dateStr).getDay()];
+  const WX = {sunny:'☀️',cloudy:'☁️',rainy:'🌧️',snowy:'❄️'};
+  // 全写真を集める
+  const allPhotos = [];
+  dayE.forEach(e => allPhotos.push(...parsePhotos(e.memo||'')));
+  const urlsJ = JSON.stringify(allPhotos).replace(/"/g,'&quot;');
+  let html = `<div class="cal-detail-date">📅 ${y}年${parseInt(m)}月${parseInt(d)}日（${dow}）</div>`;
+  // 写真ギャラリーを最前面に
+  if (allPhotos.length) {
+    html += `<div class="cal-gallery">
+      ${allPhotos.map((u,i)=>`<div class="cal-gallery-item" onclick="openLightbox(${urlsJ},${i})"><img src="${u}" loading="lazy"></div>`).join('')}
+    </div>
+    <p class="cal-photo-count">📷 ${allPhotos.length}枚（タップして拡大）</p>`;
+  }
+  // 作業詳細
+  dayE.forEach(e => {
+    const wx = WX[e.weather]||'';
+    const tMinM = (e.memo||'').match(/\[最低気温\]\n([^\n]*)/);
+    const pestM = (e.memo||'').match(/\[農薬・資材\]\n([\s\S]*?)(?=\n\n\[|$)/);
+    const memoM = (e.memo||'').match(/\[メモ・気づき\]\n([\s\S]*?)(?=\n\n\[|$)/);
+    const tmin = tMinM ? tMinM[1] : '';
+    const pest = pestM ? pestM[1].trim() : '';
+    const memo = memoM ? memoM[1].trim() : (!(e.memo||'').startsWith('[') ? e.memo||'' : '');
+    html += `<div class="cal-entry-detail">
+      <div class="cal-meta">
+        ${wx?`<span class="cal-tag">${wx}${e.temperature?` ${e.temperature}℃${tmin?'/'+tmin:''}`:''}</span>`:''}
+        ${e.person?`<span class="cal-tag">👤 ${e.person}</span>`:''}
+        ${e.area?`<span class="cal-tag green">🌿 ${e.area}</span>`:''}
+      </div>
+      ${e.content?`<div class="cal-entry-text">${e.content}</div>`:''}
+      ${pest?`<div class="cal-entry-text" style="color:#666;font-size:12px;margin-top:4px">🧪 ${pest}</div>`:''}
+      ${memo?`<div class="cal-entry-text" style="color:#666;font-size:12px;margin-top:4px">📝 ${memo}</div>`:''}
+    </div>`;
+  });
+  document.getElementById('cal-modal-content').innerHTML = html;
+  document.getElementById('cal-modal').classList.add('active');
+}
+
+function closeCalModal(e) {
+  if (e.target === document.getElementById('cal-modal') || e.target.closest('.cal-sheet-handle')) {
+    document.getElementById('cal-modal').classList.remove('active');
+  }
+}
+function calPrevMonth() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function calNextMonth() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+
+// ==================== ライトボックス ====================
+let lbPhotos = [], lbIdx = 0;
+function openLightbox(photos, idx) {
+  lbPhotos = photos; lbIdx = idx; updateLb();
+  document.getElementById('lightbox').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('active'); document.body.style.overflow=''; }
+function navPhoto(dir) { lbIdx = (lbIdx + dir + lbPhotos.length) % lbPhotos.length; updateLb(); }
+function updateLb() {
+  document.getElementById('lb-img').src = lbPhotos[lbIdx];
+  const multi = lbPhotos.length > 1;
+  document.getElementById('lb-prev').classList.toggle('hidden', !multi);
+  document.getElementById('lb-next').classList.toggle('hidden', !multi);
+  document.getElementById('lb-counter').textContent = multi ? `${lbIdx+1} / ${lbPhotos.length}` : '';
+}
+
+// ==================== init ====================
+function init() {
+  document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
+  // Supabase init（localStorageが使えない環境でも動くようにtry-catch）
+  let savedUrl = null, savedKey = null;
+  try { savedUrl = localStorage.getItem('farm_url'); savedKey = localStorage.getItem('farm_key'); } catch(e) {}
+  initSupabase(savedUrl || PRESET_URL, savedKey || PRESET_KEY);
+
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchTab(btn.dataset.tab);
+      if (btn.dataset.tab === 'list') loadEntries();
+      if (btn.dataset.tab === 'calendar') loadEntries().then(() => renderCalendar());
+    });
+  });
+
+  // Weather
+  document.querySelectorAll('.weather-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected'); selWeather = btn.dataset.weather;
+    });
+  });
+
+  // Person
+  document.querySelectorAll('[data-person]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = btn.dataset.person;
+      if (selPersons.includes(p)) { selPersons = selPersons.filter(x=>x!==p); btn.classList.remove('selected'); }
+      else { selPersons.push(p); btn.classList.add('selected'); }
+    });
+  });
+
+  // Area
+  document.querySelectorAll('[data-area]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const a = btn.dataset.area;
+      if (selAreas.includes(a)) { selAreas = selAreas.filter(x=>x!==a); btn.classList.remove('selected'); btn.style.background=btn.style.color=btn.style.borderColor=''; }
+      else { selAreas.push(a); btn.classList.add('selected'); applyAreaStyle(btn); }
+    });
+  });
+
+  document.getElementById('entry-form').addEventListener('submit', handleSubmit);
+  document.getElementById('cancel-delete').addEventListener('click', () => { document.getElementById('delete-modal').classList.remove('active'); deleteId=null; });
+  document.getElementById('confirm-delete').addEventListener('click', () => { if(deleteId!=null) deleteEntry(deleteId); document.getElementById('delete-modal').classList.remove('active'); deleteId=null; });
+
+  // Auto temperature
+  document.getElementById('auto-temp-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('auto-temp-btn');
+    btn.disabled = true; btn.innerHTML = '⏳ 取得中';
+    try {
+      const pos = await new Promise((res,rej) => navigator.geolocation.getCurrentPosition(res,rej,{timeout:10000}));
+      const {latitude:lat,longitude:lon} = pos.coords;
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min&current_weather=true&timezone=Asia%2FTokyo`);
+      const data = await r.json();
+      document.getElementById('entry-temp').value = data.current_weather.temperature;
+      if (data.daily?.temperature_2m_min) document.getElementById('entry-temp-min').value = data.daily.temperature_2m_min[0];
+      showToast('気温を取得しました');
+    } catch { showToast('気温の取得に失敗しました', true); }
+    finally { btn.disabled=false; btn.innerHTML='<span>📍</span>自動'; }
+  });
+
+  // Lightbox swipe & keyboard
+  const lb = document.getElementById('lightbox');
+  let swX = 0;
+  lb.addEventListener('touchstart', e => { swX = e.touches[0].clientX; }, {passive:true});
+  lb.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - swX; if(Math.abs(dx)>40) navPhoto(dx<0?1:-1); });
+  lb.addEventListener('click', e => { if(e.target===lb||e.target.id==='lb-img') closeLightbox(); });
+  document.addEventListener('keydown', e => {
+    if (!lb.classList.contains('active')) return;
+    if (e.key==='ArrowRight') navPhoto(1);
+    if (e.key==='ArrowLeft') navPhoto(-1);
+    if (e.key==='Escape') closeLightbox();
+  });
+}
+
+let toastTimer = null;
+function showToast(msg, isErr=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast' + (isErr?' error':'');
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+init();
+</script>
+</body>
+</html>
